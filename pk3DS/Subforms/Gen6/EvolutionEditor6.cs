@@ -6,9 +6,9 @@ using System.Media;
 using System.Text;
 using System.Windows.Forms;
 using pk3DS.Properties;
-using pk3DS.Core.Structures.Gen6;
 using pk3DS.Core;
-using pk3DS.Core.Structures.PersonalInfo;
+using pk3DS.Core.Randomizers;
+using pk3DS.Core.Structures;
 
 namespace pk3DS
 {
@@ -69,28 +69,26 @@ namespace pk3DS
             foreach (ComboBox cb in mb) { foreach (string s in evolutionMethods) cb.Items.Add(s); }
             foreach (ComboBox cb in rb) { foreach (string s in specieslist) cb.Items.Add(s); }
 
-            sortedspecies = (string[])specieslist.Clone();
-            Array.Sort(sortedspecies);
-
             CB_Species.Items.Clear();
-            foreach (string s in sortedspecies) CB_Species.Items.Add(s);
-            CB_Species.Items.RemoveAt(0);
+            foreach (string s in specieslist) CB_Species.Items.Add(s);
 
-            CB_Species.SelectedIndex = 0;
+            CB_Species.SelectedIndex = 1;
+            RandSettings.GetFormSettings(this, GB_Randomizer.Controls);
         }
+
         private readonly byte[][] files;
         private readonly ComboBox[] pb;
         private readonly ComboBox[] rb;
         private readonly ComboBox[] mb;
         private readonly PictureBox[] pic;
         private int entry = -1;
-        private readonly string[] sortedspecies;
         private readonly string[] specieslist = Main.Config.getText(TextName.SpeciesNames);
         private readonly string[] movelist = Main.Config.getText(TextName.MoveNames);
         private readonly string[] itemlist = Main.Config.getText(TextName.ItemNames);
         private readonly string[] typelist = Main.Config.getText(TextName.Types);
         private bool dumping;
         private EvolutionSet evo = new EvolutionSet6(new byte[EvolutionSet6.SIZE]);
+
         private void getList()
         {
             entry = Array.IndexOf(specieslist, CB_Species.Text);
@@ -101,12 +99,13 @@ namespace pk3DS
             for (int i = 0; i < evo.PossibleEvolutions.Length; i++)
             {
                 if (evo.PossibleEvolutions[i].Method > 34) return; // Invalid!
-
+                
                 mb[i].SelectedIndex = evo.PossibleEvolutions[i].Method; // Which will trigger the params cb to reload the valid params list
                 pb[i].SelectedIndex = evo.PossibleEvolutions[i].Argument;
                 rb[i].SelectedIndex = evo.PossibleEvolutions[i].Species;
             }
         }
+
         private void setList()
         {
             if (entry < 1 || dumping) return;
@@ -126,61 +125,65 @@ namespace pk3DS
             getList();
         }
 
-        private static int[] sL; // Random Species List
         private void B_RandAll_Click(object sender, EventArgs e)
         {
-            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Randomize all resulting species?", "Evolution methods and parameters will stay the same.")) return;
+            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Randomize all resulting species?", "Evolution methods and parameters will stay the same."))
+                return;
 
-            // Set up advanced randomization options
-            bool rBST = CHK_BST.Checked;
-            bool rEXP = CHK_Exp.Checked;
-            bool rType = CHK_Type.Checked;
-            int ctr = 0;
-            sL = Randomizer.RandomSpeciesList;
-
-            for (int i = 0; i < CB_Species.Items.Count; i++)
-            {
-                CB_Species.SelectedIndex = i;
-                for (int j = 0; j < mb.Length; j++)
-                    if (mb[j].SelectedIndex > 0)
-                    {
-                        // Get a new random species
-                        int oldSpecies = rb[j].SelectedIndex;
-                        PersonalInfo oldpkm = Main.SpeciesStat[oldSpecies];
-                        int currentSpecies = Array.IndexOf(specieslist, CB_Species.Text);
-                        int loopctr = 0; // altering calculatiosn to prevent infinite loops
-                    defspecies:
-                        int newSpecies = Randomizer.getRandomSpecies(ref sL, ref ctr);
-                        PersonalInfo pkm = Main.SpeciesStat[newSpecies];
-                        loopctr++;
-
-                        // Verify it meets specifications
-                        if (newSpecies == currentSpecies && loopctr < Main.Config.MaxSpeciesID*10) // no A->A evolutions
-                        { goto defspecies; }
-                        if (rEXP) // Experience Growth Rate matches
-                        {
-                            if (oldpkm.EXPGrowth != pkm.EXPGrowth)
-                            { goto defspecies; }
-                        }
-                        if (rType) // Type has to be somewhat similar
-                        {
-                            if (!oldpkm.Types.Contains(pkm.Types[0]) || !oldpkm.Types.Contains(pkm.Types[1]))
-                            { goto defspecies; }
-                        }
-                        if (rBST) // Base stat total has to be close
-                        {
-                            const int l = 5; // tweakable scalars
-                            const int h = 6;
-                            if (!(pkm.BST * l / (h + loopctr/Main.Config.MaxSpeciesID) < oldpkm.BST && (pkm.BST * h + loopctr/Main.Config.MaxSpeciesID) / l > oldpkm.BST))
-                            { goto defspecies; }
-                        }
-                        // assign random val
-                        rb[j].SelectedIndex = newSpecies;
-                    }
-            }
             setList();
-            WinFormsUtil.Alert("All Pokemon's Evolutions have been randomized!");
+            // Set up advanced randomization options
+            var evos = files.Select(z => new EvolutionSet6(z)).ToArray();
+            var evoRand = new EvolutionRandomizer(Main.Config, evos);
+            evoRand.Randomizer.rBST = CHK_BST.Checked;
+            evoRand.Randomizer.rEXP = CHK_Exp.Checked;
+            evoRand.Randomizer.rType = CHK_Type.Checked;
+            evoRand.Randomizer.L = CHK_L.Checked;
+            evoRand.Randomizer.E = CHK_E.Checked;
+            evoRand.Randomizer.Initialize();
+            evoRand.Execute();
+            evos.Select(z => z.Write()).ToArray().CopyTo(files, 0);
+            getList();
+
+            WinFormsUtil.Alert("All Pokémon's Evolutions have been randomized!");
         }
+
+        private void B_Trade_Click(object sender, EventArgs e)
+        {
+            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Remove all trade evolutions?", "Evolution methods will be altered so that evolutions will be possible with only one game."))
+                return;
+
+            setList();
+            var evos = files.Select(z => new EvolutionSet6(z)).ToArray();
+            var evoRand = new EvolutionRandomizer(Main.Config, evos);
+            evoRand.Randomizer.Initialize();
+            evoRand.ExecuteTrade();
+            evos.Select(z => z.Write()).ToArray().CopyTo(files, 0);
+            getList();
+
+            WinFormsUtil.Alert("All trade evolutions have been removed!", "Trade evolutions will now occur after reaching a certain Level, or after leveling up while holding its appropriate trade item.");
+        }
+
+        private void B_EveryLevel_Click(object sender, EventArgs e)
+        {
+            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Modify evolutions?", "This will make it to where your Pokémon will evolve into something random every time it levels up."))
+                return;
+
+            setList();
+            var evos = files.Select(z => new EvolutionSet6(z)).ToArray();
+            var evoRand = new EvolutionRandomizer(Main.Config, evos);
+            evoRand.Randomizer.rBST = CHK_BST.Checked;
+            evoRand.Randomizer.rEXP = CHK_Exp.Checked;
+            evoRand.Randomizer.rType = CHK_Type.Checked;
+            evoRand.Randomizer.L = CHK_L.Checked;
+            evoRand.Randomizer.E = CHK_E.Checked;
+            evoRand.Randomizer.Initialize();
+            evoRand.ExecuteEvolveEveryLevel();
+            evoRand.Execute(); // randomize right after
+            evos.Select(z => z.Write()).ToArray().CopyTo(files, 0);
+            getList();
+            SystemSounds.Asterisk.Play();
+        }
+
         private void B_Dump_Click(object sender, EventArgs e)
         {
             if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Dump all Evolutions to Text File?"))
@@ -217,6 +220,7 @@ namespace pk3DS
         private void formClosing(object sender, FormClosingEventArgs e)
         {
             setList();
+            RandSettings.SetFormSettings(this, GB_Randomizer.Controls);
         }
 
         private void changeMethod(object sender, EventArgs e)
@@ -250,7 +254,7 @@ namespace pk3DS
                 case 3: // Moves
                     { foreach (string t in movelist) pb[op].Items.Add(t); break; }
                 case 4: // Species
-                    { for (int i = 0; i < sortedspecies.Length; i++) pb[op].Items.Add(specieslist[i]); break; }
+                    { for (int i = 0; i < specieslist.Length; i++) pb[op].Items.Add(specieslist[i]); break; }
                 case 5: // 0-255 (Beauty)
                     { for (int i = 0; i <= 255; i++) pb[op].Items.Add(i.ToString()); break; }
                 case 6:
@@ -258,6 +262,7 @@ namespace pk3DS
             }
             pb[op].SelectedIndex = 0;
         }
+
         private void changeInto(object sender, EventArgs e)
         {
             pic[Array.IndexOf(rb, sender as ComboBox)].Image = (Bitmap)Resources.ResourceManager.GetObject("_" + Array.IndexOf(specieslist, (sender as ComboBox).Text));

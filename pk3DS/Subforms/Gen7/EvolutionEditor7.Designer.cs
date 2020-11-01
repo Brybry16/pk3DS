@@ -93,6 +93,10 @@
             this.CB_I8 = new System.Windows.Forms.ComboBox();
             this.label7 = new System.Windows.Forms.Label();
             this.CB_M8 = new System.Windows.Forms.ComboBox();
+            this.B_Trade = new System.Windows.Forms.Button();
+            this.B_EveryLevel = new System.Windows.Forms.Button();
+            this.CHK_E = new System.Windows.Forms.CheckBox();
+            this.CHK_L = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.PB_1)).BeginInit();
             this.GB_Randomizer.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_F1)).BeginInit();
@@ -202,7 +206,7 @@
             // 
             // B_RandAll
             // 
-            this.B_RandAll.Location = new System.Drawing.Point(251, 47);
+            this.B_RandAll.Location = new System.Drawing.Point(511, 324);
             this.B_RandAll.Name = "B_RandAll";
             this.B_RandAll.Size = new System.Drawing.Size(100, 23);
             this.B_RandAll.TabIndex = 62;
@@ -212,14 +216,15 @@
             // 
             // GB_Randomizer
             // 
+            this.GB_Randomizer.Controls.Add(this.CHK_E);
+            this.GB_Randomizer.Controls.Add(this.CHK_L);
             this.GB_Randomizer.Controls.Add(this.L_Protip);
             this.GB_Randomizer.Controls.Add(this.CHK_BST);
             this.GB_Randomizer.Controls.Add(this.CHK_Type);
             this.GB_Randomizer.Controls.Add(this.CHK_Exp);
-            this.GB_Randomizer.Controls.Add(this.B_RandAll);
             this.GB_Randomizer.Location = new System.Drawing.Point(16, 292);
             this.GB_Randomizer.Name = "GB_Randomizer";
-            this.GB_Randomizer.Size = new System.Drawing.Size(357, 76);
+            this.GB_Randomizer.Size = new System.Drawing.Size(357, 104);
             this.GB_Randomizer.TabIndex = 63;
             this.GB_Randomizer.TabStop = false;
             this.GB_Randomizer.Text = "Randomizer Options";
@@ -228,7 +233,7 @@
             // 
             this.L_Protip.AutoSize = true;
             this.L_Protip.ForeColor = System.Drawing.Color.Red;
-            this.L_Protip.Location = new System.Drawing.Point(198, 11);
+            this.L_Protip.Location = new System.Drawing.Point(198, 9);
             this.L_Protip.Name = "L_Protip";
             this.L_Protip.Size = new System.Drawing.Size(153, 13);
             this.L_Protip.TabIndex = 66;
@@ -265,9 +270,9 @@
             this.CHK_Exp.CheckState = System.Windows.Forms.CheckState.Checked;
             this.CHK_Exp.Location = new System.Drawing.Point(6, 23);
             this.CHK_Exp.Name = "CHK_Exp";
-            this.CHK_Exp.Size = new System.Drawing.Size(219, 17);
+            this.CHK_Exp.Size = new System.Drawing.Size(222, 17);
             this.CHK_Exp.TabIndex = 63;
-            this.CHK_Exp.Text = "Share the same Exp Growth as Evolution";
+            this.CHK_Exp.Text = "Share the same EXP Growth as Evolution";
             this.CHK_Exp.UseVisualStyleBackColor = true;
             // 
             // NUD_F1
@@ -900,15 +905,58 @@
             this.CB_M8.TabIndex = 108;
             this.CB_M8.SelectedIndexChanged += new System.EventHandler(this.changeMethod);
             // 
+            // B_Trade
+            // 
+            this.B_Trade.Location = new System.Drawing.Point(468, 347);
+            this.B_Trade.Name = "B_Trade";
+            this.B_Trade.Size = new System.Drawing.Size(143, 23);
+            this.B_Trade.TabIndex = 115;
+            this.B_Trade.Text = "Remove Trade Evolutions";
+            this.B_Trade.UseVisualStyleBackColor = true;
+            this.B_Trade.Click += new System.EventHandler(this.B_Trade_Click);
+            // 
+            // B_EveryLevel
+            // 
+            this.B_EveryLevel.Location = new System.Drawing.Point(446, 370);
+            this.B_EveryLevel.Name = "B_EveryLevel";
+            this.B_EveryLevel.Size = new System.Drawing.Size(165, 23);
+            this.B_EveryLevel.TabIndex = 118;
+            this.B_EveryLevel.Text = "Random Evolution Every Level";
+            this.B_EveryLevel.UseVisualStyleBackColor = true;
+            this.B_EveryLevel.Click += new System.EventHandler(this.B_EveryLevel_Click);
+            // 
+            // CHK_E
+            // 
+            this.CHK_E.AutoSize = true;
+            this.CHK_E.Location = new System.Drawing.Point(6, 83);
+            this.CHK_E.Name = "CHK_E";
+            this.CHK_E.Size = new System.Drawing.Size(98, 17);
+            this.CHK_E.TabIndex = 480;
+            this.CHK_E.Text = "Event Legends";
+            this.CHK_E.UseVisualStyleBackColor = true;
+            // 
+            // CHK_L
+            // 
+            this.CHK_L.AutoSize = true;
+            this.CHK_L.Location = new System.Drawing.Point(6, 68);
+            this.CHK_L.Name = "CHK_L";
+            this.CHK_L.Size = new System.Drawing.Size(98, 17);
+            this.CHK_L.TabIndex = 479;
+            this.CHK_L.Text = "Game Legends";
+            this.CHK_L.UseVisualStyleBackColor = true;
+            // 
             // EvolutionEditor7
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(624, 376);
+            this.ClientSize = new System.Drawing.Size(624, 406);
+            this.Controls.Add(this.B_EveryLevel);
+            this.Controls.Add(this.B_Trade);
             this.Controls.Add(this.NUD_L8);
             this.Controls.Add(this.NUD_F8);
             this.Controls.Add(this.PB_8);
             this.Controls.Add(this.CB_P8);
+            this.Controls.Add(this.B_RandAll);
             this.Controls.Add(this.CB_I8);
             this.Controls.Add(this.label7);
             this.Controls.Add(this.CB_M8);
@@ -966,8 +1014,8 @@
             this.Controls.Add(this.L_Species);
             this.Controls.Add(this.CB_Species);
             this.MaximizeBox = false;
-            this.MaximumSize = new System.Drawing.Size(640, 415);
-            this.MinimumSize = new System.Drawing.Size(640, 415);
+            this.MaximumSize = new System.Drawing.Size(640, 445);
+            this.MinimumSize = new System.Drawing.Size(640, 445);
             this.Name = "EvolutionEditor7";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Evolution Editor";
@@ -1070,5 +1118,9 @@
         private System.Windows.Forms.ComboBox CB_I8;
         private System.Windows.Forms.Label label7;
         private System.Windows.Forms.ComboBox CB_M8;
+        private System.Windows.Forms.Button B_Trade;
+        private System.Windows.Forms.Button B_EveryLevel;
+        private System.Windows.Forms.CheckBox CHK_E;
+        private System.Windows.Forms.CheckBox CHK_L;
     }
 }

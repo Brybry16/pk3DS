@@ -1,6 +1,6 @@
 ﻿namespace pk3DS
 {
-    partial class ToolsUI
+    sealed partial class ToolsUI
     {
         /// <summary>
         /// Required designer variable.
@@ -47,13 +47,15 @@
             // 
             // PB_Unpack
             // 
+            this.PB_Unpack.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.PB_Unpack.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.PB_Unpack.Location = new System.Drawing.Point(12, 25);
             this.PB_Unpack.Name = "PB_Unpack";
             this.PB_Unpack.Size = new System.Drawing.Size(300, 67);
             this.PB_Unpack.TabIndex = 0;
-            this.PB_Unpack.MouseLeave += new System.EventHandler(this.dropLeave);
-            this.PB_Unpack.MouseHover += new System.EventHandler(this.dropHover);
+            this.PB_Unpack.MouseLeave += new System.EventHandler(this.DropLeave);
+            this.PB_Unpack.MouseHover += new System.EventHandler(this.DropHover);
             // 
             // L_DARCMini
             // 
@@ -85,6 +87,8 @@
             // 
             // PB_Repack
             // 
+            this.PB_Repack.Anchor = ((System.Windows.Forms.AnchorStyles)(((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Left) 
+            | System.Windows.Forms.AnchorStyles.Right)));
             this.PB_Repack.BorderStyle = System.Windows.Forms.BorderStyle.FixedSingle;
             this.PB_Repack.Location = new System.Drawing.Point(168, 124);
             this.PB_Repack.Name = "PB_Repack";
@@ -201,7 +205,7 @@
             this.Name = "ToolsUI";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Tools";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.closeForm);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CloseForm);
             ((System.ComponentModel.ISupportInitialize)(this.PB_BCLIM)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Padding)).EndInit();
             this.ResumeLayout(false);

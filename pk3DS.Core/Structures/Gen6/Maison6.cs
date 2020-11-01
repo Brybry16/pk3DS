@@ -1,7 +1,7 @@
 ﻿using System;
 using System.IO;
 
-namespace pk3DS.Core.Structures.Gen6
+namespace pk3DS.Core.Structures
 {
     public class Maison6
     {
@@ -12,14 +12,16 @@ namespace pk3DS.Core.Structures.Gen6
             public ushort[] Choices;
 
             public Trainer() { }
+
             public Trainer(byte[] data)
             {
                 Class = BitConverter.ToUInt16(data, 0);
                 Count = BitConverter.ToUInt16(data, 2);
                 Choices = new ushort[Count];
                 for (int i = 0; i < Count; i++)
-                    Choices[i] = BitConverter.ToUInt16(data, 4 + 2 * i);
+                    Choices[i] = BitConverter.ToUInt16(data, 4 + (2 * i));
             }
+
             public byte[] Write()
             {
                 using (var ms = new MemoryStream())
@@ -33,6 +35,7 @@ namespace pk3DS.Core.Structures.Gen6
                 }
             }
         }
+
         public class Pokemon
         {
             public ushort Species;
@@ -58,7 +61,7 @@ namespace pk3DS.Core.Structures.Gen6
             {
                 Species = BitConverter.ToUInt16(data, 0);
                 for (int i = 0; i < 4; i++)
-                    Moves[i] = BitConverter.ToUInt16(data, 2 + 2*i);
+                    Moves[i] = BitConverter.ToUInt16(data, 2 + (2 * i));
                 EV = data[0xA];
                 for (int i = 0; i < 6; i++)
                     EVs[i] = ((EV >> i) & 1) == 1;
@@ -66,6 +69,7 @@ namespace pk3DS.Core.Structures.Gen6
                 Item = BitConverter.ToUInt16(data, 0xC);
                 Form = BitConverter.ToUInt16(data, 0xE);
             }
+
             public byte[] Write()
             {
                 using (var ms = new MemoryStream())

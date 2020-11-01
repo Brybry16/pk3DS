@@ -14,6 +14,7 @@ namespace pk3DS.Core.Structures.PersonalInfo
             }
             return r;
         }
+
         public PersonalTable(byte[] data, GameVersion format)
         {
             int size = 0;
@@ -23,7 +24,8 @@ namespace pk3DS.Core.Structures.PersonalInfo
                 case GameVersion.ORASDEMO:
                 case GameVersion.ORAS: size = PersonalInfoORAS.SIZE; break;
                 case GameVersion.SMDEMO:
-                case GameVersion.SM: size = PersonalInfoSM.SIZE; break;
+                case GameVersion.SM:
+                case GameVersion.USUM: size = PersonalInfoSM.SIZE; break;
             }
 
             if (size == 0)
@@ -45,6 +47,7 @@ namespace pk3DS.Core.Structures.PersonalInfo
                     break;
                 case GameVersion.SMDEMO:
                 case GameVersion.SM:
+                case GameVersion.USUM:
                     for (int i = 0; i < d.Length; i++)
                         d[i] = new PersonalInfoSM(entries[i]);
                     break;
@@ -53,6 +56,7 @@ namespace pk3DS.Core.Structures.PersonalInfo
         }
 
         public readonly PersonalInfo[] Table;
+
         public PersonalInfo this[int index]
         {
             get
@@ -75,12 +79,14 @@ namespace pk3DS.Core.Structures.PersonalInfo
             { species = 0; Console.WriteLine("Requested out of bounds SpeciesID"); }
             return this[getFormeIndex(species, forme)].Abilities;
         }
+
         public int getFormeIndex(int species, int forme)
         {
             if (species >= Table.Length)
             { species = 0; Console.WriteLine("Requested out of bounds SpeciesID"); }
             return this[species].FormeIndex(species, forme);
         }
+
         public PersonalInfo getFormeEntry(int species, int forme)
         {
             return this[getFormeIndex(species, forme)];
@@ -103,6 +109,7 @@ namespace pk3DS.Core.Structures.PersonalInfo
 
             return FormList;
         }
+
         public string[] getPersonalEntryList(string[][] AltForms, string[] species, int MaxSpecies, out int[] baseForm, out int[] formVal)
         {
             string[] result = new string[Table.Length];
@@ -124,6 +131,7 @@ namespace pk3DS.Core.Structures.PersonalInfo
             }
             return result;
         }
+
         public int[] getSpeciesForm(int PersonalEntry, GameConfig config)
         {
             if (PersonalEntry < config.MaxSpeciesID) return new[] { PersonalEntry, 0 };

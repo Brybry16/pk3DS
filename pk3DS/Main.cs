@@ -1,4 +1,4 @@
-﻿/*----------------------------------------------------------------------------*/
+/*----------------------------------------------------------------------------*/
 /*--  This program is free software: you can redistribute it and/or modify  --*/
 /*--  it under the terms of the GNU General Public License as published by  --*/
 /*--  the Free Software Foundation, either version 3 of the License, or     --*/
@@ -20,6 +20,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading;
 using System.Windows.Forms;
 
@@ -54,7 +55,11 @@ namespace pk3DS
             string[] args = Environment.GetCommandLineArgs();
             string filename = args.Length > 0 ? Path.GetFileNameWithoutExtension(args[0])?.ToLower() : "";
             skipBoth = filename.IndexOf("3DSkip", StringComparison.Ordinal) >= 0;
+
+            if (File.Exists(RandSettings.FileName))
+                RandSettings.Load(File.ReadAllLines(RandSettings.FileName));
         }
+
         internal static GameConfig Config;
         public static string RomFSPath;
         public static string ExeFSPath;
@@ -71,34 +76,23 @@ namespace pk3DS
         {
             new About().ShowDialog();
         }
+
         private void L_GARCInfo_Click(object sender, EventArgs e)
         {
             if (RomFSPath == null)
                 return;
 
             string s = "Game Type: " + Config.Version + Environment.NewLine;
-            s = Config.Files.Select(file => file.Name).Aggregate(s, (current, t) => current + string.Format(Environment.NewLine + "{0} - {1}", t, Config.getGARCFileName(t)));
+            s = Config.Files.Select(file => file.Name).Aggregate(s, (current, t) => current + string.Format(Environment.NewLine + "{0} - {1}", t, Config.GetGARCFileName(t)));
 
-            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, s, "Copy to Clipboard?")) return;
+            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, s, "Copy to Clipboard?"))
+                return;
 
             try { Clipboard.SetText(s); }
             catch { WinFormsUtil.Alert("Unable to copy to Clipboard."); }
         }
-        private void L_Game_Click(object sender, EventArgs e)
-        {
-            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Restore Original Files?"))
-                return;
 
-            string[] result = Config.restoreFiles();
-            if (result.Length == 2) // error
-            {
-                WinFormsUtil.Alert(result);
-                return;
-            }
-
-            WinFormsUtil.Alert("Restored files:", result[0], "The program will now close.");
-            Application.Exit(); // do not call closing events that repackage personal/gametext
-        }
+        private void L_Game_Click(object sender, EventArgs e) => new EnhancedRestore(Config).ShowDialog();
 
         private void B_Open_Click(object sender, EventArgs e)
         {
@@ -106,7 +100,8 @@ namespace pk3DS
             if (fbd.ShowDialog() == DialogResult.OK)
                 openQuick(fbd.SelectedPath);
         }
-        private void changeLanguage(object sender, EventArgs e)
+
+        private void ChangeLanguage(object sender, EventArgs e)
         {
             if (InvokeRequired)
                 Invoke((MethodInvoker)delegate { Language = CB_Lang.SelectedIndex; });
@@ -131,25 +126,38 @@ namespace pk3DS
             Properties.Settings.Default.Language = Language;
             Properties.Settings.Default.Save();
         }
+
         private void Menu_Exit_Click(object sender, EventArgs e)
         {
             Close();
         }
-        private void formClosing(object sender, FormClosingEventArgs e)
+
+        private void CloseForm(object sender, FormClosingEventArgs e)
         {
-            if (Config == null) return;
+            if (Config == null)
+                return;
             var g = Config.GARCGameText;
             string[][] files = Config.GameTextStrings;
             g.Files = files.Select(x => TextFile.getBytes(Config, x)).ToArray();
             g.Save();
+
+            try
+            {
+                File.WriteAllLines(RandSettings.FileName, RandSettings.Save(), Encoding.Unicode);
+            }
+            catch { }
         }
 
         private void openQuick(string path)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
 
             if (!Directory.Exists(path)) // File
             {
+                if (!File.Exists(path))
+                    return;
+
                 FileInfo fi = new FileInfo(path);
                 if (fi.Name.Contains("code.bin")) // Compress/Decompress .code.bin
                 {
@@ -173,7 +181,7 @@ namespace pk3DS
                     if (dr == DialogResult.Cancel)
                         return;
                     bool recurse = dr == DialogResult.Yes;
-                    ToolsUI.openARC(path, pBar1, recurse);
+                    ToolsUI.OpenARC(path, pBar1, recurse);
                 }
             }
             else // Directory
@@ -186,10 +194,10 @@ namespace pk3DS
 
                 // Find RomFS folder
                 foreach (string f in folders.Where(f => new DirectoryInfo(f).Name.ToLower().Contains("rom") && Directory.Exists(f)))
-                    checkIfRomFS(f);
+                    CheckIfRomFS(f);
                 // Find ExeFS folder
                 foreach (string f in folders.Where(f => new DirectoryInfo(f).Name.ToLower().Contains("exe") && Directory.Exists(f)))
-                    checkIfExeFS(f);
+                    CheckIfExeFS(f);
 
                 if (count > 3)
                     WinFormsUtil.Alert("pk3DS will function best if you keep your Game Files folder clean and free of unnecessary folders.");
@@ -199,11 +207,11 @@ namespace pk3DS
                 Tab_ExeFS.Enabled = RomFSPath != null && ExeFSPath != null;
                 if (RomFSPath != null)
                 {
-                    toggleSubEditors();
+                    ToggleSubEditors();
                     string newtext = $"Game Loaded: {Config.Version}";
                     if (L_Game.Text != newtext && Directory.Exists("personal"))
                     { Directory.Delete("personal", true); } // Force reloading of personal data if the game is switched.
-                    L_Game.Text = newtext; TB_Path.Text = path; 
+                    L_Game.Text = newtext; TB_Path.Text = path;
                 }
                 else if (ExeFSPath != null)
                 { L_Game.Text = "ExeFS loaded - no RomFS"; TB_Path.Text = path; }
@@ -220,11 +228,13 @@ namespace pk3DS
                 }
 
                 // Enable Rebuilding options if all files have been found
-                checkIfExHeader(path);
+                CheckIfExHeader(path);
                 Menu_ExeFS.Enabled = ExeFSPath != null;
                 Menu_RomFS.Enabled = Menu_Restore.Enabled = Menu_GARCs.Enabled = RomFSPath != null;
                 Menu_Patch.Enabled = RomFSPath != null && ExeFSPath != null;
-                Menu_3DS.Enabled = 
+                Menu_3DS.Enabled =
+                    ExHeaderPath != null && RomFSPath != null && ExeFSPath != null;
+                Menu_Trimmed3DS.Enabled =
                     ExHeaderPath != null && RomFSPath != null && ExeFSPath != null;
 
                 // Change L_Game if RomFS and ExeFS exists to a better descriptor
@@ -241,12 +251,92 @@ namespace pk3DS
             }
         }
 
-        private void toggleSubEditors()
+        private void B_ExtractCXI_Click(object sender, EventArgs e)
+        {
+            if (WinFormsUtil.Prompt(
+                MessageBoxButtons.OKCancel,
+                "Extracting a CXI requires multiple GB of disc space and takes some time to complete.",
+                "If you want to continue, press OK to select your CXI and then select your output directory. For best results, make sure the output directory is an empty directory.") == DialogResult.OK)
+            {
+                string inputCXI;
+                OpenFileDialog ofd = new OpenFileDialog();
+                ofd.Title = "Select CXI";
+                ofd.Filter = "CXI files (*.cxi)|*.cxi";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                    inputCXI = ofd.FileName;
+                else
+                    return;
+
+                FolderBrowserDialog fbd = new FolderBrowserDialog();
+                DialogResult result = fbd.ShowDialog();
+                if (result == DialogResult.OK)
+                    extractNCCH(inputCXI, fbd.SelectedPath);
+            }
+
+        }
+
+        private void B_Extract3DS_Click(object sender, EventArgs e)
+        {
+            if (WinFormsUtil.Prompt(
+                MessageBoxButtons.OKCancel,
+                "Extracting a 3DS file requires multiple GB of disc space and takes some time to complete.",
+                "If you want to continue, press OK to select your CXI and then select your output directory. For best results, make sure the output directory is an empty directory.") == DialogResult.OK)
+            {
+                string input3DS;
+                OpenFileDialog ofd = new OpenFileDialog();
+                ofd.Title = "Select 3DS";
+                ofd.Filter = "3DS files (*.3ds)|*.3ds";
+                if (ofd.ShowDialog() == DialogResult.OK)
+                    input3DS = ofd.FileName;
+                else
+                    return;
+
+                FolderBrowserDialog fbd = new FolderBrowserDialog();
+                DialogResult result = fbd.ShowDialog();
+                if (result == DialogResult.OK)
+                    extractNCSD(input3DS, fbd.SelectedPath);
+            }
+        }
+
+        private void extractNCCH(string ncchPath, string outputDirectory)
+        {
+            if (!File.Exists(ncchPath))
+                return;
+
+            NCCH ncch = new NCCH();
+
+            new Thread(() =>
+            {
+                threads++;
+                ncch.ExtractNCCHFromFile(ncchPath, outputDirectory, RTB_Status, pBar1);
+                threads--;
+                WinFormsUtil.Prompt(MessageBoxButtons.OK, "Extraction complete!");
+            }).Start();
+        }
+
+        private void extractNCSD(string ncsdPath, string outputDirectory)
+        {
+            if (!File.Exists(ncsdPath))
+                return;
+
+            NCSD ncsd = new NCSD();
+            new Thread(() =>
+            {
+                threads++;
+                ncsd.ExtractFilesFromNCSD(ncsdPath, outputDirectory, RTB_Status, pBar1);
+                threads--;
+                WinFormsUtil.Prompt(MessageBoxButtons.OK, "Extraction complete!");
+            }).Start();
+        }
+
+        private void ToggleSubEditors()
         {
             // Hide all buttons
             foreach (var f in from TabPage t in TC_RomFS.TabPages from f in t.Controls.OfType<FlowLayoutPanel>() select f)
+            {
                 for (int i = f.Controls.Count - 1; i >= 0; i--)
                     f.Controls.Remove(f.Controls[i]);
+            }
 
             B_MoveTutor.Visible = Config.ORAS; // Default false unless loaded
 
@@ -263,7 +353,8 @@ namespace pk3DS
                 case 7:
                     romfs = new Control[] {B_GameText, B_StoryText, B_Personal, B_Evolution, B_LevelUp, B_Wild, B_MegaEvo, B_EggMove, B_Trainer, B_Item, B_Move, B_Royal, B_Pickup, B_OWSE };
                     exefs = new Control[] {B_TM, B_TypeChart, B_ShinyRate};
-                    cro = new Control[] {B_Mart};
+                    cro = new Control[] {B_Mart, B_MoveTutor};
+                    B_MoveTutor.Visible = Config.USUM;
 
                     if (Config.Version != GameVersion.SMDEMO)
                         romfs = romfs.Concat(new[] {B_Static}).ToArray();
@@ -277,6 +368,7 @@ namespace pk3DS
             FLP_ExeFS.Controls.AddRange(exefs);
             FLP_CRO.Controls.AddRange(cro);
         }
+
         private void updateGameInfo()
         {
             // 0 - JP
@@ -287,14 +379,15 @@ namespace pk3DS
             // 5 - ES
             // 6 - CHS
             // 7 - KO
-            // 8 - 
+            // 8 -
             // 11 - CHT
             int[] AILang = { 0, 0, 1, 2, 4, 3, 5, 7, 8, 9, 6, 11 };
             Text = SMDH?.AppSettings == null
                 ? "pk3DS" // nothing else
                 : "pk3DS - " + SMDH.AppInfo[AILang[Language]].ShortDescription;
         }
-        private static GameConfig checkGameType(string[] files)
+
+        private static GameConfig CheckGameType(string[] files)
         {
             try
             {
@@ -307,7 +400,8 @@ namespace pk3DS
             catch { }
             return null;
         }
-        private bool checkIfRomFS(string path)
+
+        private bool CheckIfRomFS(string path)
         {
             string[] top = Directory.GetDirectories(path);
             FileInfo fi = new FileInfo(top[top.Length > 1 ? 1 : 0]);
@@ -315,7 +409,7 @@ namespace pk3DS
             if (fi.Name == "a")
             {
                 string[] files = Directory.GetFiles(path, "*", SearchOption.AllDirectories);
-                var cfg = checkGameType(files);
+                var cfg = CheckGameType(files);
 
                 if (cfg == null)
                 {
@@ -327,17 +421,17 @@ namespace pk3DS
 
                 RomFSPath = path;
                 Config = cfg;
-                Randomizer.MaxSpeciesID = cfg.MaxSpeciesID;
                 return true;
             }
             WinFormsUtil.Error("Folder does not contain an 'a' folder in the top level.");
             RomFSPath = null;
             return false;
         }
-        private bool checkIfExeFS(string path)
+
+        private bool CheckIfExeFS(string path)
         {
             string[] files = Directory.GetFiles(path);
-            if (files.Length == 1 && Path.GetFileName(files[0]).ToLower() == "exefs.bin")
+            if (files.Length == 1 && string.Equals(Path.GetFileName(files[0]), "exefs.bin", StringComparison.OrdinalIgnoreCase))
             {
                 // Prompt if the user wants to unpack the ExeFS.
                 if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Detected ExeFS binary.", "Unpack?"))
@@ -354,20 +448,18 @@ namespace pk3DS
                 // unpack successful, continue onward!
             }
 
-            if (files.Length != 3 && files.Length != 4) 
+            if (files.Length != 3 && files.Length != 4)
                 return false;
 
             FileInfo fi = new FileInfo(files[0]);
             if (!fi.Name.Contains("code"))
             {
-                if (new FileInfo(files[1]).Name == "code.bin")
-                {
-                    File.Move(files[1], Path.Combine(Path.GetDirectoryName(files[1]), ".code.bin"));
-                    files = Directory.GetFiles(path);
-                    fi = new FileInfo(files[0]);
-                }
-                else
+                if (new FileInfo(files[1]).Name != "code.bin")
                     return false;
+
+                File.Move(files[1], Path.Combine(Path.GetDirectoryName(files[1]), ".code.bin"));
+                files = Directory.GetFiles(path);
+                fi = new FileInfo(files[0]);
             }
             if (fi.Length % 0x200 != 0 && WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Detected Compressed code binary.", "Decompress? File will be replaced.") == DialogResult.Yes)
                 new Thread(() => { threads++; new BLZCoder(new[] { "-d", files[0] }, pBar1); threads--; WinFormsUtil.Alert("Decompressed!"); }).Start();
@@ -375,25 +467,30 @@ namespace pk3DS
             ExeFSPath = path;
             return true;
         }
-        private bool checkIfExHeader(string path)
+
+        private bool CheckIfExHeader(string path)
         {
             ExHeaderPath = null;
             // Input folder path should contain the ExHeader.
                 string[] files = Directory.GetFiles(path);
-			foreach (string fp in from s in files let f = new FileInfo(s) where (f.Name.ToLower().StartsWith("exh") || f.Name.ToLower().StartsWith("decryptedexh")) && f.Length == 0x800 select s)
+            foreach (string fp in from s in files let f = new FileInfo(s) where (f.Name.StartsWith("exh", StringComparison.OrdinalIgnoreCase) || f.Name.StartsWith("decryptedexh", StringComparison.OrdinalIgnoreCase)) && f.Length == 0x800 select s)
                 ExHeaderPath = fp;
 
             return ExHeaderPath != null;
         }
+
         private bool threadActive()
         {
-            if (threads <= 0) return false;
+            if (threads <= 0)
+                return false;
             WinFormsUtil.Alert("Please wait for all operations to finish first."); return true;
         }
+
         private void tabMain_DragEnter(object sender, DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy;
         }
+
         private void tabMain_DragDrop(object sender, DragEventArgs e)
         {
             string[] files = (string[])e.Data.GetData(DataFormats.FileDrop);
@@ -404,14 +501,17 @@ namespace pk3DS
         // RomFS Subform Items
         private void rebuildRomFS(object sender, EventArgs e)
         {
-            if (threadActive()) return;
-            if (RomFSPath == null) return;
-            if (WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Rebuild RomFS?") != DialogResult.Yes) return;
+            if (threadActive())
+                return;
+            if (RomFSPath == null)
+                return;
+            if (WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Rebuild RomFS?") != DialogResult.Yes)
+                return;
 
             SaveFileDialog sfd = new SaveFileDialog
             {
                 FileName = HANSgameID != 0 ? HANSgameID.ToString("X8") + ".romfs" : "romfs.bin",
-                Filter = "HANS RomFS|*.romfs" + "|Binary File|*.bin" + "|All Files|*.*"
+                Filter = "HANS RomFS|*.romfs|Binary File|*.bin|All Files|*.*"
             };
             sfd.FilterIndex = HANSgameID != 0 ? 0 : sfd.Filter.Length - 1;
 
@@ -430,9 +530,11 @@ namespace pk3DS
                 }).Start();
             }
         }
+
         private void B_GameText_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
                 var g = Config.GARCGameText;
@@ -442,18 +544,21 @@ namespace pk3DS
                 g.Save();
             }).Start();
         }
+
         private void B_StoryText_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
-                var g = Config.getGARCData("storytext");
+                var g = Config.GetGARCData("storytext");
                 string[][] files = g.Files.Select(file => new TextFile(Config, file).Lines).ToArray();
                 Invoke((Action)(() => new TextEditor(files, "storytext").ShowDialog()));
                 g.Files = TryWriteText(files, g);
                 g.Save();
             }).Start();
         }
+
         private static byte[][] TryWriteText(string[][] files, GARCFile g)
         {
             byte[][] data = new byte[files.Length][];
@@ -471,7 +576,7 @@ namespace pk3DS
                     data[i] = g.getFile(i);
                 }
             }
-            if (!errata.Any())
+            if (errata.Count == 0)
                 return data;
 
             string[] options =
@@ -480,7 +585,7 @@ namespace pk3DS
                 "Yes: Save changes, dump errata/failed text",
                 "No: Save changes, don't dump errata/failed text"
             };
-            var dr = WinFormsUtil.Prompt(MessageBoxButtons.YesNoCancel, "Errors found while attempting to save text." 
+            var dr = WinFormsUtil.Prompt(MessageBoxButtons.YesNoCancel, "Errors found while attempting to save text."
                 + Environment.NewLine + "Example: " + errata[0],
                 string.Join(Environment.NewLine, options));
             if (dr == DialogResult.Cancel)
@@ -498,9 +603,11 @@ namespace pk3DS
 
             return data;
         }
+
         private void B_Maison_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             DialogResult dr;
             switch (Config.Generation)
             {
@@ -513,14 +620,15 @@ namespace pk3DS
                 default:
                     return;
             }
-            if (dr == DialogResult.Cancel) return;
+            if (dr == DialogResult.Cancel)
+                return;
 
             new Thread(() =>
             {
                 bool super = dr == DialogResult.Yes;
                 string c = super ? "S" : "N";
-                var trdata = Config.getGARCData("maisontr"+c);
-                var trpoke = Config.getGARCData("maisonpk"+c);
+                var trdata = Config.GetGARCData("maisontr"+c);
+                var trpoke = Config.GetGARCData("maisonpk"+c);
                 byte[][] trd = trdata.Files;
                 byte[][] trp = trpoke.Files;
                 switch (Config.Generation)
@@ -538,9 +646,11 @@ namespace pk3DS
                 trpoke.Save();
             }).Start();
         }
+
         private void B_Personal_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
                 byte[][] d = Config.GARCPersonal.Files;
@@ -560,17 +670,18 @@ namespace pk3DS
                 Config.GARCPersonal.Files = d;
                 Config.GARCPersonal.Save();
                 Config.InitializePersonal();
-
             }).Start();
         }
+
         private void B_Trainer_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
-                var trclass = Config.getGARCData("trclass");
-                var trdata = Config.getGARCData("trdata");
-                var trpoke = Config.getGARCData("trpoke");
+                var trclass = Config.GetGARCData("trclass");
+                var trdata = Config.GetGARCData("trdata");
+                var trpoke = Config.GetGARCData("trpoke");
                 byte[][] trc = trclass.Files;
                 byte[][] trd = trdata.Files;
                 byte[][] trp = trpoke.Files;
@@ -592,9 +703,11 @@ namespace pk3DS
                 trpoke.Save();
             }).Start();
         }
+
         private void B_Wild_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
                 string[] files;
@@ -609,9 +722,11 @@ namespace pk3DS
                             action = () => new XYWE().ShowDialog();
                         else return;
 
-                        fileGet(files, false);
+                        Invoke((MethodInvoker)delegate { Enabled = false; });
+                        FileGet(files, false);
                         Invoke(action);
-                        fileSet(files);
+                        FileSet(files);
+                        Invoke((MethodInvoker)delegate { Enabled = true; });
                         break;
                     case 7:
                         Invoke((MethodInvoker)delegate { Enabled = false; });
@@ -619,11 +734,11 @@ namespace pk3DS
 
                         files = new [] { "encdata", "zonedata", "worlddata" };
                         updateStatus($"GARC Get: {files[0]}... ");
-                        var ed = Config.getlzGARCData(files[0]);
+                        var ed = Config.GetlzGARCData(files[0]);
                         updateStatus($"GARC Get: {files[1]}... ");
-                        var zd = Config.getlzGARCData(files[1]);
+                        var zd = Config.GetlzGARCData(files[1]);
                         updateStatus($"GARC Get: {files[2]}... ");
-                        var wd = Config.getlzGARCData(files[2]);
+                        var wd = Config.GetlzGARCData(files[2]);
                         updateStatus("Running SMWE... ");
                         action = () => new SMWE(ed, zd, wd).ShowDialog();
                         Invoke(action);
@@ -639,9 +754,13 @@ namespace pk3DS
                 }
             }).Start();
         }
+
         private void B_OWSE_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
+            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "The OverWorld/Script Editor is not recommended for most users and is still a work-in-progress.", "Continue anyway?"))
+                return;
             switch (Config.Generation)
             {
                 case 6:
@@ -652,6 +771,7 @@ namespace pk3DS
                     return;
             }
         }
+
         private void runOWSE6()
         {
             Enabled = false;
@@ -660,11 +780,11 @@ namespace pk3DS
                 bool reload = ModifierKeys == Keys.Control || ModifierKeys == (Keys.Alt | Keys.Control);
                 string[] files = {"encdata", "storytext", "mapGR", "mapMatrix"};
                 if (reload || files.Sum(t => Directory.Exists(t) ? 0 : 1) != 0) // Dev bypass if all exist already
-                    fileGet(files, false);
+                    FileGet(files, false);
 
                 // Don't set any data back. Just view.
                 {
-                    var g = Config.getGARCData("storytext");
+                    var g = Config.GetGARCData("storytext");
                     string[][] tfiles = g.Files.Select(file => new TextFile(Config, file).Lines).ToArray();
                     Invoke((Action)(() => new OWSE().Show()));
                     Invoke((Action)(() => new TextEditor(tfiles, "storytext").Show()));
@@ -672,9 +792,10 @@ namespace pk3DS
                         Thread.Sleep(200);
                 }
                 Invoke((MethodInvoker) delegate { Enabled = true; });
-                fileSet(files);
+                FileSet(files);
             }).Start();
         }
+
         private void runOWSE7()
         {
             Enabled = false;
@@ -682,13 +803,13 @@ namespace pk3DS
             {
                 var files = new[] { "encdata", "zonedata", "worlddata" };
                 updateStatus($"GARC Get: {files[0]}... ");
-                var ed = Config.getlzGARCData(files[0]);
+                var ed = Config.GetlzGARCData(files[0]);
                 updateStatus($"GARC Get: {files[1]}... ");
-                var zd = Config.getlzGARCData(files[1]);
+                var zd = Config.GetlzGARCData(files[1]);
                 updateStatus($"GARC Get: {files[2]}... ");
-                var wd = Config.getlzGARCData(files[2]);
+                var wd = Config.GetlzGARCData(files[2]);
 
-                var g = Config.getGARCData("storytext");
+                var g = Config.GetGARCData("storytext");
                 string[][] tfiles = g.Files.Select(file => new TextFile(Config, file).Lines).ToArray();
                 Invoke((Action)(() => new TextEditor(tfiles, "storytext").Show()));
                 Invoke((Action)(() => new OWSE7(ed, zd, wd).Show()));
@@ -697,12 +818,14 @@ namespace pk3DS
                 Invoke((MethodInvoker)delegate { Enabled = true; });
             }).Start();
         }
+
         private void B_Evolution_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
-                var g = Config.getGARCData("evolution");
+                var g = Config.GetGARCData("evolution");
                 byte[][] d = g.Files;
                 switch (Config.Generation)
                 {
@@ -714,15 +837,18 @@ namespace pk3DS
                         break;
                 }
                 g.Files = d;
+                Config.InitializeEvos();
                 g.Save();
             }).Start();
         }
+
         private void B_MegaEvo_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
-                var g = Config.getGARCData("megaevo");
+                var g = Config.GetGARCData("megaevo");
                 byte[][] d = g.Files;
                 switch (Config.Generation)
                 {
@@ -737,12 +863,14 @@ namespace pk3DS
                 g.Save();
             }).Start();
         }
+
         private void B_Item_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
-                var g = Config.getGARCData("item");
+                var g = Config.GetGARCData("item");
                 byte[][] d = g.Files;
                 switch (Config.Generation)
                 {
@@ -757,9 +885,11 @@ namespace pk3DS
                 g.Save();
             }).Start();
         }
+
         private void B_Move_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
                 var g = Config.GARCMoves;
@@ -768,26 +898,28 @@ namespace pk3DS
                 {
                     case 6:
                         bool isMini = Config.ORAS;
-                        Moves = isMini ? mini.unpackMini(g.getFile(0), "WD") : g.Files;
+                        Moves = isMini ? Mini.UnpackMini(g.getFile(0), "WD") : g.Files;
                         Invoke((Action)(() => new MoveEditor6(Moves).ShowDialog()));
-                        g.Files = isMini ? new[] { mini.packMini(Moves, "WD") } : Moves;
+                        g.Files = isMini ? new[] { Mini.PackMini(Moves, "WD") } : Moves;
                         break;
                     case 7:
-                        Moves = mini.unpackMini(g.getFile(0), "WD");
+                        Moves = Mini.UnpackMini(g.getFile(0), "WD");
                         Invoke((Action)(() => new MoveEditor7(Moves).ShowDialog()));
-                        g.Files = new[] {mini.packMini(Moves, "WD")};
+                        g.Files = new[] {Mini.PackMini(Moves, "WD")};
                         break;
                 }
                 g.Save();
+                Config.InitializeMoves();
             }).Start();
         }
+
         private void B_LevelUp_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
-                var g = Config.getGARCData("levelup");
-                byte[][] d = g.Files;
+                byte[][] d = Config.GARCLearnsets.Files;
                 switch (Config.Generation)
                 {
                     case 6:
@@ -797,16 +929,19 @@ namespace pk3DS
                         Invoke((Action)(() => new LevelUpEditor7(d).ShowDialog()));
                         break;
                 }
-                g.Files = d;
-                g.Save();
+                Config.GARCLearnsets.Files = d;
+                Config.GARCLearnsets.Save();
+                Config.InitializeLearnset();
             }).Start();
         }
+
         private void B_EggMove_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
-                var g = Config.getGARCData("eggmove");
+                var g = Config.GetGARCData("eggmove");
                 byte[][] d = g.Files;
                 switch (Config.Generation)
                 {
@@ -821,36 +956,41 @@ namespace pk3DS
                 g.Save();
             }).Start();
         }
+
         private void B_TitleScreen_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             new Thread(() =>
             {
                 string[] files = { "titlescreen" };
-                fileGet(files); // Compressed files exist, handled in the other form since there's so many
+                FileGet(files); // Compressed files exist, handled in the other form since there's so many
                 Invoke((Action)(() => new TitleScreenEditor6().ShowDialog()));
-                fileSet(files);
+                FileSet(files);
             }).Start();
         }
         // RomFS File Requesting Method Wrapper
-        private void fileGet(string[] files, bool skipDecompression = true, bool skipGet = false)
+        private void FileGet(string[] files, bool skipDecompression = true, bool skipGet = false)
         {
-            if (skipGet || skipBoth) return;
+            if (skipGet || skipBoth)
+                return;
             foreach (string toEdit in files)
             {
-                string GARC = Config.getGARCFileName(toEdit);
+                string GARC = Config.GetGARCFileName(toEdit);
                 updateStatus($"GARC Get: {toEdit} @ {GARC}... ");
                 threadGet(Path.Combine(RomFSPath, GARC), toEdit, true, skipDecompression);
                 while (threads > 0) Thread.Sleep(50);
                 resetStatus();
             }
         }
-        private void fileSet(IEnumerable<string> files, bool keep = false)
+
+        private void FileSet(IEnumerable<string> files, bool keep = false)
         {
-            if (skipBoth) return;
+            if (skipBoth)
+                return;
             foreach (string toEdit in files)
             {
-                string GARC = Config.getGARCFileName(toEdit);
+                string GARC = Config.GetGARCFileName(toEdit);
                 updateStatus($"GARC Set: {toEdit} @ {GARC}... ");
                 threadSet(Path.Combine(RomFSPath, GARC), toEdit, 4); // 4 bytes for Gen6
                 while (threads > 0) Thread.Sleep(50);
@@ -862,8 +1002,10 @@ namespace pk3DS
         // ExeFS Subform Items
         private void rebuildExeFS(object sender, EventArgs e)
         {
-            if (ExeFSPath == null) return;
-            if (WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Rebuild ExeFS?") != DialogResult.Yes) return;
+            if (ExeFSPath == null)
+                return;
+            if (WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Rebuild ExeFS?") != DialogResult.Yes)
+                return;
 
             string[] files = Directory.GetFiles(ExeFSPath);
             int file = 0; if (files[1].Contains("code")) file = 1;
@@ -871,7 +1013,7 @@ namespace pk3DS
             SaveFileDialog sfd = new SaveFileDialog
             {
                 FileName = HANSgameID != 0 ? HANSgameID.ToString("X8") + ".exefs" : "exefs.bin",
-                Filter = "HANS ExeFS|*.exefs" + "|Binary File|*.bin" + "|All Files|*.*"
+                Filter = "HANS ExeFS|*.exefs|Binary File|*.bin|All Files|*.*"
             };
             sfd.FilterIndex = HANSgameID != 0 ? 0 : sfd.Filter.Length - 1;
 
@@ -887,37 +1029,40 @@ namespace pk3DS
                 }).Start();
             }
         }
+
         private void B_Pickup_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             switch (Config.Generation)
             {
                 case 6:
                     if (ExeFSPath != null) new PickupEditor6().Show();
                     break;
                 case 7:
-                    var pickup = Config.getlzGARCData("pickup");
+                    var pickup = Config.GetlzGARCData("pickup");
                     Invoke((Action)(() => new PickupEditor7(pickup).ShowDialog()));
                     break;
             }
         }
+
         private void B_TMHM_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
-            if (ExeFSPath != null)
-                switch (Config.Generation)
-                {
-                    case 6:
-                        new TMHMEditor6().Show();
-                        break;
-                    case 7:
-                        new TMEditor7().Show();
-                        break;
-                }
+            if (threadActive())
+                return;
+            if (ExeFSPath == null)
+                return;
+            switch (Config.Generation)
+            {
+                case 6: new TMHMEditor6().Show(); break;
+                case 7: new TMEditor7().Show(); break;
+            }
         }
+
         private void B_Mart_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             switch (Config.Generation)
             {
                 case 6:
@@ -925,36 +1070,53 @@ namespace pk3DS
                     break;
 
                 case 7:
-                    if (threadActive()) return;
-                    if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo,
-                        "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
+                    if (threadActive())
                         return;
-                    if (RomFSPath != null) new MartEditor7().Show();
+                    if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
+                        return;
+                    if (RomFSPath != null) (Config.USUM ? new MartEditor7UU() : (Form)new MartEditor7()).Show();
                     break;
             }
         }
+
         private void B_MoveTutor_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
-            if (Config.XY) { WinFormsUtil.Alert("No Tutors for X/Y."); return; } // Already disabled button...
-            if (ExeFSPath != null) new TutorEditor6().Show();
+            if (threadActive())
+                return;
+            switch (Config.Generation)
+            {
+                case 6:
+                    if (ExeFSPath != null) new TutorEditor6().Show();
+                    break;
+                case 7:
+                    if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
+                        return;
+                    if (RomFSPath != null) new TutorEditor7().Show();
+                    break;
+            }
         }
+
         private void B_OPower_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             if (ExeFSPath != null) new OPower().Show();
         }
+
         private void B_ShinyRate_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
             if (ExeFSPath != null) new ShinyRate().ShowDialog();
         }
 
         // CRO Subform Items
         private void patchCRO_CRR(object sender, EventArgs e)
         {
-            if (threadActive()) return;
-            if (RomFSPath == null) return;
+            if (threadActive())
+                return;
+            if (RomFSPath == null)
+                return;
             if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Rebuilding CRO/CRR is not necessary if you patch the RO module.", "Continue?"))
                 return;
             new Thread(() =>
@@ -966,13 +1128,13 @@ namespace pk3DS
                 WinFormsUtil.Alert("CRO's and CRR have been updated.",
                         "If you have made any modifications, it is required that the RSA Verification check be patched on the system in order for the modified CROs to load (ie, no file redirection like NTR's layeredFS).");
             }).Start();
-
         }
+
         private void B_Starter_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
-            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo,
-                "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
+            if (threadActive())
+                return;
+            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo,                 "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
                 return;
             string CRO = Path.Combine(RomFSPath, "DllPoke3Select.cro");
             string CRO2 = Path.Combine(RomFSPath, "DllField.cro");
@@ -988,15 +1150,16 @@ namespace pk3DS
             }
             new StarterEditor6().ShowDialog();
         }
+
         private void B_TypeChart_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
 
             switch (Config.Generation)
             {
                 case 6:
-                    if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo,
-                        "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
+                    if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
                         return;
                     string CRO = Path.Combine(RomFSPath, "DllBattle.cro");
                     if (!File.Exists(CRO))
@@ -1009,14 +1172,14 @@ namespace pk3DS
                 case 7:
                     new TypeChart7().ShowDialog();
                     break;
-
             }
         }
+
         private void B_Gift_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
-            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo,
-                "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
+            if (threadActive())
+                return;
+            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
                 return;
             string CRO = Path.Combine(RomFSPath, "DllField.cro");
             if (!File.Exists(CRO))
@@ -1026,17 +1189,19 @@ namespace pk3DS
             }
             new GiftEditor6().ShowDialog();
         }
+
         private void B_Static_Click(object sender, EventArgs e)
         {
-            if (threadActive()) return;
+            if (threadActive())
+                return;
 
             if (Config.Generation == 7)
             {
                 new Thread(() =>
                 {
-                    var esg = Config.getGARCData("encounterstatic");
+                    var esg = Config.GetGARCData("encounterstatic");
                     byte[][] es = esg.Files;
-                    
+
                     Invoke((Action)(() => new StaticEncounterEditor7(es).ShowDialog()));
                     esg.Files = es;
                     esg.Save();
@@ -1044,8 +1209,7 @@ namespace pk3DS
                 return;
             }
 
-            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo,
-                "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
+            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "CRO Editing causes crashes if you do not patch the RO module.", "In order to patch the RO module, your device must be running Custom Firmware (for example, Luma3DS).", "Continue anyway?"))
                 return;
             string CRO = Path.Combine(RomFSPath, "DllField.cro");
             if (!File.Exists(CRO))
@@ -1056,32 +1220,52 @@ namespace pk3DS
             new StaticEncounterEditor6().ShowDialog();
         }
 
-        // 3DS Building
-        private void B_Rebuild3DS_Click(object sender, EventArgs e)
+        // CXI Building
+        private void B_RebuildTrimmed3DS_Click(object sender, EventArgs e)
         {
-            // Ensure that the romfs paths are valid
-            string[] files = Directory.GetFiles(TB_Path.Text, "*", SearchOption.AllDirectories);
-            if (!Config.IsRebuildable(files.Length))
-            {
-                WinFormsUtil.Error("RomFS file count does not match the default game file count.");
+            if (threadActive())
                 return;
-            }
-            if (threadActive()) return;
 
             SaveFileDialog sfd = new SaveFileDialog
             {
                 FileName = "newROM.3ds",
                 Filter = "Binary File|*.*"
             };
-            if (sfd.ShowDialog() != DialogResult.OK) return;
+            if (sfd.ShowDialog() != DialogResult.OK)
+                return;
             string path = sfd.FileName;
 
             new Thread(() =>
             {
                 threads++;
                 Exheader exh = new Exheader(ExHeaderPath);
-                CTRUtil.buildROM(true, "Nintendo", ExeFSPath, RomFSPath, ExHeaderPath, exh.GetSerial(), path, pBar1,
-                    RTB_Status);
+                CTRUtil.buildROM(true, "Nintendo", ExeFSPath, RomFSPath, ExHeaderPath, exh.GetSerial(), path,
+                    true, pBar1, RTB_Status);
+                threads--;
+            }).Start();
+        }
+
+        // 3DS Building
+        private void B_Rebuild3DS_Click(object sender, EventArgs e)
+        {
+            if (threadActive())
+                return;
+
+            SaveFileDialog sfd = new SaveFileDialog
+            {
+                FileName = "newROM.3ds",
+                Filter = "Binary File|*.*"
+            };
+            if (sfd.ShowDialog() != DialogResult.OK)
+                return;
+            string path = sfd.FileName;
+
+            new Thread(() =>
+            {
+                threads++;
+                Exheader exh = new Exheader(ExHeaderPath);
+                CTRUtil.buildROM(true, "Nintendo", ExeFSPath, RomFSPath, ExHeaderPath, exh.GetSerial(), path,
+                    false, pBar1, RTB_Status);
                 threads--;
             }).Start();
         }
@@ -1091,14 +1275,17 @@ namespace pk3DS
         {
             new ToolsUI().ShowDialog();
         }
+
         private void B_Patch_Click(object sender, EventArgs e)
         {
             new Patch().ShowDialog();
         }
+
         private void Menu_BLZ_Click(object sender, EventArgs e)
         {
             var ofd = new OpenFileDialog();
-            if (DialogResult.OK != ofd.ShowDialog()) return;
+            if (DialogResult.OK != ofd.ShowDialog())
+                return;
 
             string path = ofd.FileName;
             FileInfo fi = new FileInfo(path);
@@ -1110,10 +1297,12 @@ namespace pk3DS
             else if (WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Detected Compressed Binary", "Decompress? File will be replaced.") == DialogResult.Yes)
                 new Thread(() => { threads++; new BLZCoder(new[] { "-d", path }, pBar1); threads--; WinFormsUtil.Alert("Decompressed!"); }).Start();
         }
+
         private void Menu_LZ11_Click(object sender, EventArgs e)
         {
             var ofd = new OpenFileDialog();
-            if (DialogResult.OK != ofd.ShowDialog()) return;
+            if (DialogResult.OK != ofd.ShowDialog())
+                return;
 
             string path = ofd.FileName;
             FileInfo fi = new FileInfo(path);
@@ -1126,7 +1315,7 @@ namespace pk3DS
                 "Yes = Decompress\nNo = Compress\nCancel = Abort");
             new Thread(() =>
             {
-                threads++; 
+                threads++;
                 if (dr == DialogResult.Yes)
                 {
                     try
@@ -1143,10 +1332,12 @@ namespace pk3DS
                 threads--;
             }).Start();
         }
+
         private void Menu_SMDH_Click(object sender, EventArgs e)
         {
             new Icon().ShowDialog();
         }
+
         private void Menu_Shuffler_Click(object sender, EventArgs e)
         {
             new Shuffler().ShowDialog();
@@ -1162,7 +1353,7 @@ namespace pk3DS
             return garc.Reference;
         }
 
-        private bool getGARC(string infile, string outfolder, bool PB, bool bypassExt = false)
+        private bool GetGARC(string infile, string outfolder, bool PB, bool bypassExt = false)
         {
             if (skipBoth && Directory.Exists(outfolder))
             {
@@ -1179,9 +1370,10 @@ namespace pk3DS
             }
             catch (Exception e) { WinFormsUtil.Error("Could not get the GARC:", e.ToString()); threads--; return false; }
         }
+
         private bool setGARC(string outfile, string infolder, int padBytes, bool PB)
         {
-            if (skipBoth || ModifierKeys == Keys.Control && WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Cancel writing data back to GARC?") == DialogResult.Yes)
+            if (skipBoth || (ModifierKeys == Keys.Control && WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Cancel writing data back to GARC?") == DialogResult.Yes))
             { threads--; updateStatus("Aborted!", false); return false; }
 
             try
@@ -1193,13 +1385,19 @@ namespace pk3DS
             }
             catch (Exception e) { WinFormsUtil.Error("Could not set the GARC back:", e.ToString()); threads--; return false; }
         }
+
         private void threadGet(string infile, string outfolder, bool PB = true, bool bypassExt = false)
         {
             threads++;
-            if (Directory.Exists(outfolder)) try { Directory.Delete(outfolder, true); }
+            if (Directory.Exists(outfolder))
+            {
+                try { Directory.Delete(outfolder, true); }
                 catch { }
-            new Thread(() => getGARC(infile, outfolder, PB, bypassExt)).Start();
+            }
+
+            new Thread(() => GetGARC(infile, outfolder, PB, bypassExt)).Start();
         }
+
         private void threadSet(string outfile, string infolder, int padBytes, bool PB = true)
         {
             threads++;
@@ -1213,6 +1411,7 @@ namespace pk3DS
             try
             {
                 if (RTB_Status.InvokeRequired)
+                {
                     RTB_Status.Invoke((MethodInvoker)delegate
                     {
                         RTB_Status.AppendText(newtext);
@@ -1220,6 +1419,7 @@ namespace pk3DS
                         RTB_Status.ScrollToCaret();
                         L_Status.Text = RTB_Status.Lines.Last().Split(new[] {" @"}, StringSplitOptions.None)[0];
                     });
+                }
                 else
                 {
                     RTB_Status.AppendText(newtext);
@@ -1230,21 +1430,38 @@ namespace pk3DS
             }
             catch { }
         }
+
         private void resetStatus()
         {
             try
             {
                 if (L_Status.InvokeRequired)
-                    L_Status.Invoke((MethodInvoker)delegate
-                    {
-                        L_Status.Text = "";
-                    });
+                {
+                    L_Status.Invoke((MethodInvoker)(() => L_Status.Text = ""));
+                }
                 else
                 {
                     L_Status.Text = "";
                 }
             }
             catch { }
+        }
+
+        private void setInt32SeedToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Reseed RNG?", "If yes, copy the 32 bit (not hex) integer seed to the clipboard before hitting Yes."))
+                return;
+
+            string val = string.Empty;
+            try { val = Clipboard.GetText(); }
+            catch { }
+            if (int.TryParse(val, out int seed))
+            {
+                Util.ReseedRand(seed);
+                WinFormsUtil.Alert($"Reseeded RNG to seed: {seed}");
+                return;
+            }
+            WinFormsUtil.Alert("Unable to set seed.");
         }
     }
 }

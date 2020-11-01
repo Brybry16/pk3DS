@@ -55,15 +55,15 @@ namespace pk3DS
             ? new byte[] // ORAS
             {
                 3, 10, 14, 17, 18, 19, 19, 19, 19, // General
-                3, // Unused
-                7, 6, 4, 3, 8,
+                1,
+                9, 6, 4, 3, 8,
                 8, 3, 3, 4,
-                3, 6, 6,
+                3, 6, 8,
                 7, 4
             }
             : new byte[] // XY
             {
-                3, 10, 14, 17, 18, 19, 19, 19, 19, // General
+                2, 11, 14, 17, 18, 19, 19, 19, 19, // General
                 1, // Unused
                 4, 10, 3, 9, 1, 1, // Misc
                 3, 3, // Balls
@@ -81,27 +81,27 @@ namespace pk3DS
 
         readonly string[] locations = Main.Config.ORAS
             ? new[] // ORAS
-            { 
-                "No Badges", "1 Badge", "2 Badges", "3 Badges", "4 Badges", "5 Badges", "6 Badges", "7 Badges", "8 Badges",
-                "Unused",
-                "Slateport Market [Incenses]", "Slateport Market [Vitamins]", "Slateport Market [TMs]", "Rustboro Mart [Poke Balls]", "Slateport Mart [Misc]",
-                "Mauville Mart [TMs]", "Verdanturf Mart [Poke Balls]", "Fallarbor Mart [Poke Balls]", "Lavaridge Town [Herbs]", 
-                "Lilycove Dept Store, 2F Left [Run Away Items]", "Lilycove Dept Store, 3F Left [Vitamins]", "Lilycove Dept Store, 3F Right [Misc]",
-                "Lilycove Dept Store, 4F Left [Offensive TMs]", "Lilycove Dept Store, 4F Right [Defensive TMs]" 
+            {
+                "No Gym Badges [After Pokédex]", "1 Gym Badge", "2 Gym Badges", "3 Gym Badges", "4 Gym Badges", "5 Gym Badges", "6 Gym Badges", "7 Gym Badges", "8 Gym Badges",
+                "No Gym Badges [Before Pokédex]",
+                "Slateport Market [Incenses]", "Slateport Market [Vitamins]", "Slateport Market [TMs]", "Rustboro City [Poké Balls]", "Slateport City [X Items]",
+                "Mauville City [TMs]", "Verdanturf Town [Poké Balls]", "Fallarbor Town [Poké Balls]", "Lavaridge Town [Herbs]",
+                "Lilycove Dept Store, 2F Left [Run Away Items]", "Lilycove Dept Store, 3F Left [Vitamins]", "Lilycove Dept Store, 3F Right [X Items]",
+                "Lilycove Dept Store, 4F Left [Offensive TMs]", "Lilycove Dept Store, 4F Right [Defensive TMs]"
             }
             : new[] // XY
             {
-                "No Badges", "1 Badge", "2 Badges", "3 Badges", "4 Badges", "5 Badges", "6 Badges", "7 Badges", "8 Badges",
+                "No Gym Badges", "1 Gym Badge", "2 Gym Badges", "3 Gym Badges", "4 Gym Badges", "5 Gym Badges", "6 Gym Badges", "7 Gym Badges", "8 Gym Badges",
                 "Unused",
-                "Herbs", "Balls", "Stones", "Incence", "Aquacorde Balls", "Aquacorde Potion",
-                "Lumiose North Boulevard [Balls]", "Cyllage City [Balls]", 
-                "Shalour City [TMs]", "Lumiose South Boulevard [TMs]",
+                "Lumiose City [Herboriste]", "Lumiose City [Poké Ball Boutique]", "Lumiose City [Stone Emporium]", "Coumarine City [Incenses]", "Aquacorde Town [Poké Ball]", "Aquacorde Town [Potion]",
+                "Lumiose City North Boulevard [Poké Balls]", "Cyllage City [Poké Balls]",
+                "Shalour City [TMs]", "Lumiose City South Boulevard [TMs]",
                 "Laverre City [Vitamins]",
-                "Snowbelle City [Balls]",
+                "Snowbelle City [Poké Balls]",
                 "Kiloude City [TMs]",
                 "Anistar City [TMs]",
-                "Santalune City [X-Stat]",
-                "Coumarine City [Balls]"
+                "Santalune City [X Items]",
+                "Coumarine City [Poké Balls]"
             };
 
         private void getDataOffset(int index)
@@ -110,6 +110,7 @@ namespace pk3DS
             for (int i = 0; i < index; i++)
                 dataoffset += 2 * entries[i];
         }
+
         private void setupDGV()
         {
             DataGridViewColumn dgvIndex = new DataGridViewTextBoxColumn();
@@ -134,12 +135,14 @@ namespace pk3DS
         }
 
         private int entry = -1;
+
         private void changeIndex(object sender, EventArgs e)
         {
             if (entry > -1) setList();
             entry = CB_Location.SelectedIndex;
             getList();
         }
+
         private void getList()
         {
             dgv.Rows.Clear();
@@ -149,14 +152,15 @@ namespace pk3DS
             for (int i = 0; i < count; i++)
             {
                 dgv.Rows[i].Cells[0].Value = i.ToString();
-                dgv.Rows[i].Cells[1].Value = itemlist[BitConverter.ToUInt16(data, dataoffset + 2 * i)];
+                dgv.Rows[i].Cells[1].Value = itemlist[BitConverter.ToUInt16(data, dataoffset + (2 * i))];
             }
         }
+
         private void setList()
         {
             int count = dgv.Rows.Count;
             for (int i = 0; i < count; i++)
-                Array.Copy(BitConverter.GetBytes((ushort)Array.IndexOf(itemlist, dgv.Rows[i].Cells[1].Value)), 0, data, dataoffset + 2 * i, 2);
+                Array.Copy(BitConverter.GetBytes((ushort)Array.IndexOf(itemlist, dgv.Rows[i].Cells[1].Value)), 0, data, dataoffset + (2 * i), 2);
         }
 
         private void B_Save_Click(object sender, EventArgs e)
@@ -165,10 +169,12 @@ namespace pk3DS
             File.WriteAllBytes(codebin, data);
             Close();
         }
+
         private void B_Cancel_Click(object sender, EventArgs e)
         {
             Close();
         }
+
         private void B_Randomize_Click(object sender, EventArgs e)
         {
             if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNoCancel, "Randomize mart inventories?"))
@@ -180,12 +186,17 @@ namespace pk3DS
             Util.Shuffle(validItems);
 
             bool specialOnly = DialogResult.Yes == WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Randomize only special marts?", "Will leave regular necessities intact.");
-            int start = specialOnly ? 9 : 0;
+            int start = specialOnly ? 10 : 0;
             for (int i = start; i < CB_Location.Items.Count; i++)
             {
                 CB_Location.SelectedIndex = i;
                 for (int r = 0; r < dgv.Rows.Count; r++)
                 {
+                    int currentItem = Array.IndexOf(itemlist, dgv.Rows[r].Cells[1].Value);
+                    if (CHK_XItems.Checked && MartEditor7.XItems.Contains(currentItem))
+                        continue;
+                    if (MartEditor7.BannedItems.Contains(currentItem))
+                        continue;
                     dgv.Rows[r].Cells[1].Value = itemlist[validItems[ctr++]];
                     if (ctr <= validItems.Length) continue;
                     Util.Shuffle(validItems); ctr = 0;

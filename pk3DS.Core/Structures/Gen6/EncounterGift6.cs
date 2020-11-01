@@ -1,6 +1,6 @@
 ﻿using System.IO;
 
-namespace pk3DS.Core.Structures.Gen6
+namespace pk3DS.Core.Structures
 {
     public class EncounterGift6
     {
@@ -28,6 +28,11 @@ namespace pk3DS.Core.Structures.Gen6
         public byte u22;
         // All
         public byte uLast;
+
+        public bool ShinyLock {
+            get => (Shiny & 2) != 0;
+            set => Shiny = (byte)((Shiny & ~2) | (value ? 2 : 0));
+        }
 
         public EncounterGift6(byte[] data, bool oras)
         {
@@ -67,6 +72,7 @@ namespace pk3DS.Core.Structures.Gen6
                 uLast = br.ReadByte();
             }
         }
+
         public byte[] Write()
         {
             using (MemoryStream ms = new MemoryStream())

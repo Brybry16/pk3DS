@@ -388,6 +388,7 @@
             this.TabControl_EncounterData = new System.Windows.Forms.TabControl();
             this.B_Dump = new System.Windows.Forms.Button();
             this.B_Randomize = new System.Windows.Forms.Button();
+            this.CHK_HomogeneousHordes = new System.Windows.Forms.CheckBox();
             this.TabPage_Horde.SuspendLayout();
             this.GB_Tweak.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_LevelAmp)).BeginInit();
@@ -844,6 +845,7 @@
             // 
             // GB_Tweak
             // 
+            this.GB_Tweak.Controls.Add(this.CHK_HomogeneousHordes);
             this.GB_Tweak.Controls.Add(this.CHK_MegaForm);
             this.GB_Tweak.Controls.Add(this.L_RandOpt);
             this.GB_Tweak.Controls.Add(this.CHK_BST);
@@ -26188,6 +26190,16 @@
             this.B_Randomize.UseVisualStyleBackColor = true;
             this.B_Randomize.Click += new System.EventHandler(this.B_Randomize_Click);
             // 
+            // CHK_HomogeneousHordes
+            // 
+            this.CHK_HomogeneousHordes.AutoSize = true;
+            this.CHK_HomogeneousHordes.Location = new System.Drawing.Point(18, 97);
+            this.CHK_HomogeneousHordes.Name = "CHK_HomogeneousHordes";
+            this.CHK_HomogeneousHordes.Size = new System.Drawing.Size(133, 17);
+            this.CHK_HomogeneousHordes.TabIndex = 296;
+            this.CHK_HomogeneousHordes.Text = "Single Species Hordes";
+            this.CHK_HomogeneousHordes.UseVisualStyleBackColor = true;
+            // 
             // RSWE
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
@@ -26206,6 +26218,7 @@
             this.MinimumSize = new System.Drawing.Size(964, 454);
             this.Name = "RSWE";
             this.Text = "ORAS Wild Editor";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.RSWE_FormClosing);
             this.TabPage_Horde.ResumeLayout(false);
             this.TabPage_Horde.PerformLayout();
             this.GB_Tweak.ResumeLayout(false);
@@ -26766,6 +26779,7 @@
         private System.Windows.Forms.CheckBox CHK_BST;
         private System.Windows.Forms.Label L_RandOpt;
         private System.Windows.Forms.CheckBox CHK_MegaForm;
+        private System.Windows.Forms.CheckBox CHK_HomogeneousHordes;
     }
 }
 

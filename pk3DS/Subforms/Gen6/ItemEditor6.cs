@@ -1,8 +1,9 @@
-﻿using pk3DS.Core;
-using pk3DS.Core.Structures.Gen6;
-using System;
+﻿using System;
 using System.IO;
+using System.Linq;
 using System.Windows.Forms;
+using pk3DS.Core;
+using pk3DS.Core.Structures;
 
 namespace pk3DS
 {
@@ -26,44 +27,37 @@ namespace pk3DS
             foreach (string s in itemlist) CB_Item.Items.Add(s);
             CB_Item.SelectedIndex = 1;
         }
+
         private int entry = -1;
-        private Item item;
-        private void changeEntry(object sender, EventArgs e)
+
+        private void ChangeEntry(object sender, EventArgs e)
         {
-            setEntry();
+            SetEntry();
             entry = CB_Item.SelectedIndex;
             L_Index.Text = "Index: " + entry.ToString("000");
-            getEntry();
+            GetEntry();
         }
-        private void getEntry()
+
+        private void GetEntry()
         {
             if (entry < 1) return;
-            item = new Item(files[entry]);
+            Grid.SelectedObject = new Item(files[entry]);
 
             RTB.Text = itemflavor[entry].Replace("\\n", Environment.NewLine);
-            MT_Price.Text = item.BuyPrice.ToString();
-            NUD_UseEffect.Value = item.UseEffect;
         }
-        private void setEntry()
+
+        private void SetEntry()
         {
             if (entry < 1) return;
-
-            item.Price = (ushort)(WinFormsUtil.ToInt32(MT_Price)/10);
-            item.UseEffect = (byte)(int)NUD_UseEffect.Value;
-
-            files[entry] = item.Write();
+            files[entry] = ((Item)Grid.SelectedObject).Write();
         }
-        private void formClosing(object sender, FormClosingEventArgs e)
+
+        private void IsFormClosing(object sender, FormClosingEventArgs e)
         {
-            setEntry();
+            SetEntry();
         }
 
-        private void changePrice(object sender, EventArgs e)
-        {
-            MT_Sell.Text = (Math.Min(WinFormsUtil.ToUInt32(MT_Price) / 10, 0x7FFF) * 10 / 2).ToString();
-        }
-
-        private int getItemMapOffset()
+        private int GetItemMapOffset()
         {
             if (Main.ExeFSPath == null) { WinFormsUtil.Alert("No exeFS code to load."); return -1; }
             string[] exefsFiles = Directory.GetFiles(Main.ExeFSPath);
@@ -76,6 +70,13 @@ namespace pk3DS
 
             int ptr = Util.IndexOfBytes(data, reference, 0x400000, 0) - 2 + reference.Length;
             return ptr;
+        }
+
+        private void B_Table_Click(object sender, EventArgs e)
+        {
+            var items = files.Select(z => new Item(z));
+            Clipboard.SetText(TableUtil.GetTable(items, itemlist));
+            System.Media.SystemSounds.Asterisk.Play();
         }
     }
 }

@@ -84,14 +84,13 @@
             this.L_Quality = new System.Windows.Forms.Label();
             this.L_0xB = new System.Windows.Forms.Label();
             this.NUD_0xB = new System.Windows.Forms.NumericUpDown();
-            this.NUD_0x20 = new System.Windows.Forms.NumericUpDown();
-            this.NUD_0x21 = new System.Windows.Forms.NumericUpDown();
-            this.L_0x20 = new System.Windows.Forms.Label();
-            this.L_0x21 = new System.Windows.Forms.Label();
             this.B_RandAll = new System.Windows.Forms.Button();
             this.groupBox1 = new System.Windows.Forms.GroupBox();
-            this.CHK_Type = new System.Windows.Forms.CheckBox();
             this.CHK_Category = new System.Windows.Forms.CheckBox();
+            this.CHK_Type = new System.Windows.Forms.CheckBox();
+            this.B_Metronome = new System.Windows.Forms.Button();
+            this.B_Table = new System.Windows.Forms.Button();
+            this.CLB_Flags = new System.Windows.Forms.CheckedListBox();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_HitMax)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_HitMin)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Priority)).BeginInit();
@@ -114,8 +113,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Effect)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Accuracy)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_0xB)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.NUD_0x20)).BeginInit();
-            ((System.ComponentModel.ISupportInitialize)(this.NUD_0x21)).BeginInit();
             this.groupBox1.SuspendLayout();
             this.SuspendLayout();
             // 
@@ -139,7 +136,7 @@
             this.CB_Move.Name = "CB_Move";
             this.CB_Move.Size = new System.Drawing.Size(130, 21);
             this.CB_Move.TabIndex = 1;
-            this.CB_Move.SelectedIndexChanged += new System.EventHandler(this.changeEntry);
+            this.CB_Move.SelectedIndexChanged += new System.EventHandler(this.ChangeEntry);
             // 
             // L_Move
             // 
@@ -746,50 +743,6 @@
             this.NUD_0xB.Size = new System.Drawing.Size(40, 20);
             this.NUD_0xB.TabIndex = 51;
             // 
-            // NUD_0x20
-            // 
-            this.NUD_0x20.Location = new System.Drawing.Point(282, 239);
-            this.NUD_0x20.Maximum = new decimal(new int[] {
-            255,
-            0,
-            0,
-            0});
-            this.NUD_0x20.Name = "NUD_0x20";
-            this.NUD_0x20.Size = new System.Drawing.Size(40, 20);
-            this.NUD_0x20.TabIndex = 52;
-            // 
-            // NUD_0x21
-            // 
-            this.NUD_0x21.Location = new System.Drawing.Point(282, 261);
-            this.NUD_0x21.Maximum = new decimal(new int[] {
-            255,
-            0,
-            0,
-            0});
-            this.NUD_0x21.Name = "NUD_0x21";
-            this.NUD_0x21.Size = new System.Drawing.Size(40, 20);
-            this.NUD_0x21.TabIndex = 53;
-            // 
-            // L_0x20
-            // 
-            this.L_0x20.AutoSize = true;
-            this.L_0x20.Location = new System.Drawing.Point(232, 242);
-            this.L_0x20.Name = "L_0x20";
-            this.L_0x20.Size = new System.Drawing.Size(44, 13);
-            this.L_0x20.TabIndex = 59;
-            this.L_0x20.Text = "Flags 1:";
-            this.L_0x20.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
-            // L_0x21
-            // 
-            this.L_0x21.AutoSize = true;
-            this.L_0x21.Location = new System.Drawing.Point(233, 264);
-            this.L_0x21.Name = "L_0x21";
-            this.L_0x21.Size = new System.Drawing.Size(44, 13);
-            this.L_0x21.TabIndex = 62;
-            this.L_0x21.Text = "Flags 2:";
-            this.L_0x21.TextAlign = System.Drawing.ContentAlignment.MiddleRight;
-            // 
             // B_RandAll
             // 
             this.B_RandAll.Location = new System.Drawing.Point(333, 10);
@@ -804,22 +757,12 @@
             // 
             this.groupBox1.Controls.Add(this.CHK_Category);
             this.groupBox1.Controls.Add(this.CHK_Type);
-            this.groupBox1.Location = new System.Drawing.Point(333, 33);
+            this.groupBox1.Location = new System.Drawing.Point(333, 60);
             this.groupBox1.Name = "groupBox1";
-            this.groupBox1.Size = new System.Drawing.Size(98, 342);
+            this.groupBox1.Size = new System.Drawing.Size(98, 55);
             this.groupBox1.TabIndex = 64;
             this.groupBox1.TabStop = false;
             this.groupBox1.Text = "Options";
-            // 
-            // CHK_Type
-            // 
-            this.CHK_Type.AutoSize = true;
-            this.CHK_Type.Location = new System.Drawing.Point(6, 19);
-            this.CHK_Type.Name = "CHK_Type";
-            this.CHK_Type.Size = new System.Drawing.Size(50, 17);
-            this.CHK_Type.TabIndex = 0;
-            this.CHK_Type.Text = "Type";
-            this.CHK_Type.UseVisualStyleBackColor = true;
             // 
             // CHK_Category
             // 
@@ -831,17 +774,54 @@
             this.CHK_Category.Text = "Category";
             this.CHK_Category.UseVisualStyleBackColor = true;
             // 
-            // Moves
+            // CHK_Type
+            // 
+            this.CHK_Type.AutoSize = true;
+            this.CHK_Type.Location = new System.Drawing.Point(6, 19);
+            this.CHK_Type.Name = "CHK_Type";
+            this.CHK_Type.Size = new System.Drawing.Size(50, 17);
+            this.CHK_Type.TabIndex = 0;
+            this.CHK_Type.Text = "Type";
+            this.CHK_Type.UseVisualStyleBackColor = true;
+            // 
+            // B_Metronome
+            // 
+            this.B_Metronome.Location = new System.Drawing.Point(333, 33);
+            this.B_Metronome.Name = "B_Metronome";
+            this.B_Metronome.Size = new System.Drawing.Size(98, 23);
+            this.B_Metronome.TabIndex = 65;
+            this.B_Metronome.Text = "Metronome Mode";
+            this.B_Metronome.UseVisualStyleBackColor = true;
+            this.B_Metronome.Click += new System.EventHandler(this.B_Metronome_Click);
+            // 
+            // B_Table
+            // 
+            this.B_Table.Location = new System.Drawing.Point(356, 117);
+            this.B_Table.Name = "B_Table";
+            this.B_Table.Size = new System.Drawing.Size(75, 23);
+            this.B_Table.TabIndex = 66;
+            this.B_Table.Text = "Export Table";
+            this.B_Table.UseVisualStyleBackColor = true;
+            this.B_Table.Click += new System.EventHandler(this.B_Table_Click);
+            // 
+            // CLB_Flags
+            // 
+            this.CLB_Flags.FormattingEnabled = true;
+            this.CLB_Flags.Location = new System.Drawing.Point(328, 146);
+            this.CLB_Flags.Name = "CLB_Flags";
+            this.CLB_Flags.Size = new System.Drawing.Size(103, 229);
+            this.CLB_Flags.TabIndex = 70;
+            // 
+            // MoveEditor6
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(439, 382);
+            this.ClientSize = new System.Drawing.Size(439, 381);
+            this.Controls.Add(this.CLB_Flags);
+            this.Controls.Add(this.B_Table);
+            this.Controls.Add(this.B_Metronome);
             this.Controls.Add(this.groupBox1);
             this.Controls.Add(this.B_RandAll);
-            this.Controls.Add(this.L_0x21);
-            this.Controls.Add(this.L_0x20);
-            this.Controls.Add(this.NUD_0x21);
-            this.Controls.Add(this.NUD_0x20);
             this.Controls.Add(this.NUD_0xB);
             this.Controls.Add(this.L_0xB);
             this.Controls.Add(this.CB_Quality);
@@ -892,7 +872,7 @@
             this.Name = "MoveEditor6";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterParent;
             this.Text = "Move Editor";
-            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.formClosing);
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.CloseForm);
             ((System.ComponentModel.ISupportInitialize)(this.NUD_HitMax)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_HitMin)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Priority)).EndInit();
@@ -916,8 +896,6 @@
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Effect)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Accuracy)).EndInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_0xB)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.NUD_0x20)).EndInit();
-            ((System.ComponentModel.ISupportInitialize)(this.NUD_0x21)).EndInit();
             this.groupBox1.ResumeLayout(false);
             this.groupBox1.PerformLayout();
             this.ResumeLayout(false);
@@ -983,13 +961,12 @@
         private System.Windows.Forms.NumericUpDown NUD_StatP1;
         private System.Windows.Forms.Label L_0xB;
         private System.Windows.Forms.NumericUpDown NUD_0xB;
-        private System.Windows.Forms.NumericUpDown NUD_0x20;
-        private System.Windows.Forms.NumericUpDown NUD_0x21;
-        private System.Windows.Forms.Label L_0x20;
-        private System.Windows.Forms.Label L_0x21;
         private System.Windows.Forms.Button B_RandAll;
         private System.Windows.Forms.GroupBox groupBox1;
         private System.Windows.Forms.CheckBox CHK_Category;
         private System.Windows.Forms.CheckBox CHK_Type;
+        private System.Windows.Forms.Button B_Metronome;
+        private System.Windows.Forms.Button B_Table;
+        private System.Windows.Forms.CheckedListBox CLB_Flags;
     }
 }

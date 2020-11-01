@@ -1,6 +1,8 @@
 ﻿using pk3DS.Core;
 using System;
+using System.Linq;
 using System.Windows.Forms;
+using pk3DS.Core.Structures;
 
 namespace pk3DS
 {
@@ -10,44 +12,44 @@ namespace pk3DS
         {
             files = infiles;
             movelist[0] = "";
-            sortedmoves = (string[])movelist.Clone();
-            Array.Sort(sortedmoves);
 
             InitializeComponent();
             Setup();
+            RandSettings.GetFormSettings(this, groupBox1.Controls);
         }
-        private byte[][] files;
+
+        private readonly byte[][] files;
         private readonly string[] types = Main.Config.getText(TextName.Types);
         private readonly string[] moveflavor = Main.Config.getText(TextName.MoveFlavor);
         private readonly string[] movelist = Main.Config.getText(TextName.MoveNames);
-        private readonly string[] sortedmoves;
         private readonly string[] MoveCategories = { "Status", "Physical", "Special", };
         private readonly string[] StatCategories = { "None", "Attack", "Defense", "Special Attack", "Special Defense", "Speed", "Accuracy", "Evasion", "All", };
 
         private readonly string[] TargetingTypes =
-        { "Single Adjacent Ally/Foe", 
-            "Any Ally", "Any Adjacent Ally", "Single Adjacent Foe", "Everyone but User", "All Foes", 
-            "All Allies", "Self", "All Pokemon on Field", "Single Adjacent Foe (2)", "Entire Field", 
-            "Opponent's Field", "User's Field", "Self", 
+        { "Single Adjacent Ally/Foe",
+            "Any Ally", "Any Adjacent Ally", "Single Adjacent Foe", "Everyone but User", "All Foes",
+            "All Allies", "Self", "All Pokémon on Field", "Single Adjacent Foe (2)", "Entire Field",
+            "Opponent's Field", "User's Field", "Self",
         };
 
         private readonly string[] InflictionTypes =
-        { "None", 
-            "Paralyze", "Sleep", "Freeze", "Burn", "Poison", 
-            "Confusion", "Attract", "Capture", "Nightmare", "Curse", 
-            "Taunt", "Torment", "Disable", "Yawn", "Heal Block", 
-            "?", "Detect", "Leech Seed", "Embargo", "Perish Song", 
-            "Ingrain", 
+        { "None",
+            "Paralyze", "Sleep", "Freeze", "Burn", "Poison",
+            "Confusion", "Attract", "Capture", "Nightmare", "Curse",
+            "Taunt", "Torment", "Disable", "Yawn", "Heal Block",
+            "?", "Detect", "Leech Seed", "Embargo", "Perish Song",
+            "Ingrain",
         };
 
         private readonly string[] MoveQualities =
-        { "Only DMG", 
-            "No DMG -> Inflict Status", "No DMG -> -Target/+User Stat", "No DMG | Heal User", "DMG | Inflict Status", "No DMG | STATUS | +Target Stat", 
-            "DMG | -Target Stat", "DMG | +User Stat", "DMG | Absorbs DMG", "One-Hit KO", "Affects Whole Field", 
+        { "Only DMG",
+            "No DMG -> Inflict Status", "No DMG -> -Target/+User Stat", "No DMG | Heal User", "DMG | Inflict Status", "No DMG | STATUS | +Target Stat",
+            "DMG | -Target Stat", "DMG | +User Stat", "DMG | Absorbs DMG", "One-Hit KO", "Affects Whole Field",
             "Affect One Side of the Field", "Forces Target to Switch", "Unique Effect",  };
+
         private void Setup()
         {
-            foreach (string s in sortedmoves) CB_Move.Items.Add(s);
+            foreach (string s in movelist) CB_Move.Items.Add(s);
             foreach (string s in types) CB_Type.Items.Add(s);
             foreach (string s in MoveCategories) CB_Category.Items.Add(s);
             foreach (string s in StatCategories) CB_Stat1.Items.Add(s);
@@ -56,25 +58,28 @@ namespace pk3DS
             foreach (string s in TargetingTypes) CB_Targeting.Items.Add(s);
             foreach (string s in MoveQualities) CB_Quality.Items.Add(s);
             foreach (string s in InflictionTypes) CB_Inflict.Items.Add(s);
+            foreach (var s in Enum.GetNames(typeof(MoveFlag6)).Skip(1)) CLB_Flags.Items.Add(s);
             CB_Inflict.Items.Add("Special");
 
             CB_Move.Items.RemoveAt(0);
             CB_Move.SelectedIndex = 0;
         }
+
         private int entry = -1;
-        private void changeEntry(object sender, EventArgs e)
+
+        private void ChangeEntry(object sender, EventArgs e)
         {
-            setEntry();
+            SetEntry();
             entry = Array.IndexOf(movelist, CB_Move.Text);
-            getEntry();
+            GetEntry();
         }
-        private void getEntry()
+
+        private void GetEntry()
         {
             if (entry < 1) return;
             byte[] data = files[entry];
             {
-                string flavor = moveflavor[entry].Replace("\\n", Environment.NewLine);
-                RTB.Text = flavor;
+                RTB.Text = moveflavor[entry].Replace("\\n", Environment.NewLine);
 
                 CB_Type.SelectedIndex = data[0x00];
                 CB_Quality.SelectedIndex = data[0x01];
@@ -108,18 +113,14 @@ namespace pk3DS
                 NUD_StatP2.Value = data[0x1C];
                 NUD_StatP3.Value = data[0x1D];
 
-                // Unknown (Bitflag Related for stuff like Contact and Extra Move Effects)
-                NUD_0x20.Value = data[0x20]; // 0x20
-                NUD_0x21.Value = data[0x21]; // 0x21
-                // end, the other bytes aren't used.
-
-                //NUD_0x1E.Value = data[0x1E]; // 0x1E
-                //NUD_0x1F.Value = data[0x1F]; // 0x1F
-                //NUD_0x22.Value = data[0x22]; // 0x22
-                //NUD_0x23.Value = data[0x23]; // 0x23
+                var move = new Move6(data);
+                var flags = (uint)move.Flags;
+                for (int i = 0; i < CLB_Flags.Items.Count; i++)
+                    CLB_Flags.SetItemChecked(i, ((flags >> i) & 1) == 1);
             }
         }
-        private void setEntry()
+
+        private void SetEntry()
         {
             if (entry < 1) return;
             byte[] data = files[entry];
@@ -154,15 +155,25 @@ namespace pk3DS
                 data[0x1C] = (byte)NUD_StatP2.Value;
                 data[0x1D] = (byte)NUD_StatP3.Value;
 
-                data[0x20] = (byte)NUD_0x20.Value;
-                data[0x21] = (byte)NUD_0x21.Value;
-                // end, the other bytes aren't used.
+                uint flagval = 0;
+                for (int i = 0; i < CLB_Flags.Items.Count; i++)
+                    flagval |= CLB_Flags.GetItemChecked(i) ? 1u << i : 0;
+                BitConverter.GetBytes(flagval).CopyTo(data, 0x1E);
             }
             files[entry] = data;
         }
-        private void formClosing(object sender, FormClosingEventArgs e)
+
+        private void B_Table_Click(object sender, EventArgs e)
         {
-            setEntry();
+            var items = files.Select(z => new Move6(z));
+            Clipboard.SetText(TableUtil.GetTable(items, movelist));
+            System.Media.SystemSounds.Asterisk.Play();
+        }
+
+        private void CloseForm(object sender, FormClosingEventArgs e)
+        {
+            SetEntry();
+            RandSettings.SetFormSettings(this, groupBox1.Controls);
         }
 
         private void B_RandAll_Click(object sender, EventArgs e)
@@ -174,7 +185,7 @@ namespace pk3DS
             }
 
             if (WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Randomize Moves? Cannot undo.", "Double check options on the right before continuing.") != DialogResult.Yes) return;
-            Random rnd = new Random();
+            Random rnd = Util.rand;
             for (int i = 0; i < CB_Move.Items.Count; i++)
             {
                 CB_Move.SelectedIndex = i; // Get new Move
@@ -189,6 +200,24 @@ namespace pk3DS
                     CB_Type.SelectedIndex = rnd.Next(0, 18);
             }
             WinFormsUtil.Alert("All Moves have been randomized!");
+        }
+
+        private void B_Metronome_Click(object sender, EventArgs e)
+        {
+            if (WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Play using Metronome Mode?", "This will set the Base PP for every other Move to 0!") != DialogResult.Yes) return;
+
+            for (int i = 0; i < CB_Move.Items.Count; i++)
+            {
+                CB_Move.SelectedIndex = i;
+                if (CB_Move.SelectedIndex != 117 || CB_Move.SelectedIndex != 32)
+                    NUD_PP.Value = 0;
+                if (CB_Move.SelectedIndex == 117)
+                    NUD_PP.Value = 40;
+                if (CB_Move.SelectedIndex == 32)
+                    NUD_PP.Value = 1;
+            }
+            CB_Move.SelectedIndex = 0;
+            WinFormsUtil.Alert("All Moves have had their Base PP values modified!");
         }
     }
 }

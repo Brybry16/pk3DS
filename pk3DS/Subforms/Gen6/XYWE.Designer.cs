@@ -276,6 +276,7 @@
             this.label25 = new System.Windows.Forms.Label();
             this.TabPage_Horde = new System.Windows.Forms.TabPage();
             this.GB_Tweak = new System.Windows.Forms.GroupBox();
+            this.CHK_HomogeneousHordes = new System.Windows.Forms.CheckBox();
             this.CHK_MegaForm = new System.Windows.Forms.CheckBox();
             this.L_RandOpt = new System.Windows.Forms.Label();
             this.CHK_BST = new System.Windows.Forms.CheckBox();
@@ -15506,6 +15507,7 @@
             // 
             // GB_Tweak
             // 
+            this.GB_Tweak.Controls.Add(this.CHK_HomogeneousHordes);
             this.GB_Tweak.Controls.Add(this.CHK_MegaForm);
             this.GB_Tweak.Controls.Add(this.L_RandOpt);
             this.GB_Tweak.Controls.Add(this.CHK_BST);
@@ -15526,6 +15528,16 @@
             this.GB_Tweak.TabIndex = 323;
             this.GB_Tweak.TabStop = false;
             this.GB_Tweak.Text = "Extra Tweaks";
+            // 
+            // CHK_HomogeneousHordes
+            // 
+            this.CHK_HomogeneousHordes.AutoSize = true;
+            this.CHK_HomogeneousHordes.Location = new System.Drawing.Point(18, 97);
+            this.CHK_HomogeneousHordes.Name = "CHK_HomogeneousHordes";
+            this.CHK_HomogeneousHordes.Size = new System.Drawing.Size(133, 17);
+            this.CHK_HomogeneousHordes.TabIndex = 297;
+            this.CHK_HomogeneousHordes.Text = "Single Species Hordes";
+            this.CHK_HomogeneousHordes.UseVisualStyleBackColor = true;
             // 
             // CHK_MegaForm
             // 
@@ -27934,6 +27946,7 @@
             this.MinimumSize = new System.Drawing.Size(964, 454);
             this.Name = "XYWE";
             this.Text = "XY Wild Editor";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.XYWE_FormClosing);
             this.Load += new System.EventHandler(this.PreloadTabs);
             this.TabControl_EncounterData.ResumeLayout(false);
             this.TabPage_Land.ResumeLayout(false);
@@ -28770,6 +28783,7 @@
         private System.Windows.Forms.NumericUpDown NUD_LevelAmp;
         private System.Windows.Forms.CheckBox CHK_Level;
         private System.Windows.Forms.CheckBox CHK_MegaForm;
+        private System.Windows.Forms.CheckBox CHK_HomogeneousHordes;
     }
 }
 

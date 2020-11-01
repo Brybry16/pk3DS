@@ -5,12 +5,14 @@ using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
 using System.Windows.Forms;
+using pk3DS.Core;
 
 namespace pk3DS
 {
-    public partial class TitleScreenEditor6 : Form
+    public sealed partial class TitleScreenEditor6 : Form
     {
         private readonly bool compressed = Main.Config.ORAS;
+
         public TitleScreenEditor6()
         {
             InitializeComponent();
@@ -43,7 +45,7 @@ namespace pk3DS
             for (int i = 0; i < darcs.Length/2; i++)
                 CB_DARC.Items.Add($"{games[0]} - {languages[i]}");
             for (int i = darcs.Length/2; i < darcs.Length; i++)
-                CB_DARC.Items.Add($"{games[1]} - {languages[i - darcs.Length/2]}");
+                CB_DARC.Items.Add($"{games[1]} - {languages[i - (darcs.Length/2)]}");
 
             // Load darcs
             for (int i = 0; i < darcs.Length; i++)
@@ -69,6 +71,7 @@ namespace pk3DS
 
             CB_DARC.SelectedIndex = CB_DARC.Items.Count - 1; // last (english game2)
         }
+
         private readonly string[] files = Directory.GetFiles("titlescreen");
         private readonly DARC[] darcs = new DARC[2 * (Main.Config.ORAS ? 8 : 7)];
         private readonly string[] usedFiles = new string[2 * (Main.Config.ORAS ? 8 : 7)];
@@ -113,18 +116,8 @@ namespace pk3DS
 
             // Load file
             byte[] data = darc.Data.Skip((int)(darc.Entries[entry].DataOffset - darc.Header.FileDataOffset)).Take((int)darc.Entries[entry].DataLength).ToArray();
-            BCLIM.CLIM bclim = BCLIM.analyze(data, filename);
-            Image img = BCLIM.getIMG(bclim);
-
-            Rectangle cropRect = new Rectangle(0, 0, bclim.Width, bclim.Height);
-            Bitmap CropBMP = new Bitmap(cropRect.Width, cropRect.Height);
-            using (Graphics g = Graphics.FromImage(CropBMP))
-            {
-                g.DrawImage(img,
-                            new Rectangle(0, 0, CropBMP.Width, CropBMP.Height),
-                            cropRect,
-                            GraphicsUnit.Pixel);
-            }
+            BCLIM bclim = BCLIM.analyze(data, filename);
+            Image CropBMP = bclim.GetBitmap();
 
             PB_Image.Image = CropBMP;
             // store image locally for saving if need be
@@ -132,7 +125,9 @@ namespace pk3DS
 
             L_Dimensions.Text = $"Dimensions: {PB_Image.Width}w && {PB_Image.Height}h";
         }
+
         private byte[] currentBytes;
+
         private void insertFile(string path)
         {
             if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Overwrite image?"))
@@ -190,6 +185,7 @@ namespace pk3DS
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop)) e.Effect = DragDropEffects.Copy;
         }
+
         private void tabMain_DragDrop(object sender, DragEventArgs e)
         {
             string path = ((string[])e.Data.GetData(DataFormats.FileDrop))[0]; // open first D&D
@@ -254,6 +250,7 @@ namespace pk3DS
                 }
             }
         }
+
         private void clickOpen(object sender, EventArgs e)
         {
             var ofd = new OpenFileDialog

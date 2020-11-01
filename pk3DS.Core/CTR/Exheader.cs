@@ -26,6 +26,7 @@ namespace pk3DS.Core.CTR
             SHA256Managed sha = new SHA256Managed();
             return sha.ComputeHash(Data, 0, 0x400);
         }
+
         public string GetSerial()
         {
             const string output = "CTR-P-";
@@ -40,7 +41,7 @@ namespace pk3DS.Core.CTR
                 {
                     char lc = RecognizedGames[titleid].ToArray()[0].ToCharArray()[3];
                     char lc2 = vars[1].ToCharArray()[3];
-                    if (lc2 == 'A' || lc2 == 'E' || lc2 == 'P' && lc == 'J') //Prefer games in order US, PAL, JP
+                    if (lc2 == 'A' || lc2 == 'E' || (lc2 == 'P' && lc == 'J')) //Prefer games in order US, PAL, JP
                     {
                         RecognizedGames[titleid] = vars.Skip(1).Take(2).ToArray();
                     }
@@ -55,16 +56,29 @@ namespace pk3DS.Core.CTR
 
         public bool isPokemon()
         {
-            return isORAS() || isXY();
+            return isORAS() || isXY() || isUSUM() || isSuMo();
         }
+
+        public bool isUSUM()
+        {
+            return (TitleID & 0xFFFFFFFF) >> 8 == 0x1B50 || (TitleID & 0xFFFFFFFF) >> 8 == 0x1B51;
+        }
+
+        public bool isSuMo()
+        {
+            return (TitleID & 0xFFFFFFFF) >> 8 == 0x1648 || (TitleID & 0xFFFFFFFF) >> 8 == 0x175E;
+        }
+
         public bool isORAS()
         {
             return (TitleID & 0xFFFFFFFF) >> 8 == 0x11C5 || (TitleID & 0xFFFFFFFF) >> 8 == 0x11C4;
         }
+
         public bool isXY()
         {
             return (TitleID & 0xFFFFFFFF) >> 8 == 0x55D || (TitleID & 0xFFFFFFFF) >> 8 == 0x55E;
         }
+
         public string GetPokemonSerial()
         {
             if (!isPokemon())
@@ -72,6 +86,18 @@ namespace pk3DS.Core.CTR
             string name;
             switch ((TitleID & 0xFFFFFFFF) >> 8)
             {
+                case 0x1B51: 
+                    name = "A2BA"; // Ultra Moon
+                    break;
+                case 0x1B50:
+                    name = "A2AA"; // Ultra Sun
+                    break;
+                case 0x175E: // Moon
+                    name = "BNEA";
+                    break;
+                case 0x1648: // Sun
+                    name = "BNDA";
+                    break;
                 case 0x11C5: //Alpha Sapphire
                     name = "ECLA";
                     break;

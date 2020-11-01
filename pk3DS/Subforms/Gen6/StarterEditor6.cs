@@ -1,8 +1,8 @@
 ﻿using pk3DS.Core;
-using pk3DS.Core.Structures.PersonalInfo;
 using System;
 using System.IO;
 using System.Windows.Forms;
+using pk3DS.Core.Randomizers;
 
 namespace pk3DS
 {
@@ -43,27 +43,36 @@ namespace pk3DS
             };
             Labels = new[] { L_Set1, L_Set2, L_Set3, L_Set4 };
 
-            Width = Main.Config.ORAS ? Width : Width/2 + 2;
+            Width = Main.Config.ORAS ? Width : (Width / 2) + 2;
             loadData();
+            RandSettings.GetFormSettings(this, groupBox1.Controls);
         }
+
         private readonly string CROPath = Path.Combine(Main.RomFSPath, "DllPoke3Select.cro");
         private readonly string FieldPath = Path.Combine(Main.RomFSPath, "DllField.cro");
         private readonly string[] specieslist = Main.Config.getText(TextName.SpeciesNames);
         private readonly ComboBox[][] Choices;
         private readonly PictureBox[][] Previews;
         private readonly Label[] Labels;
+
         private readonly string[] StarterSummary = Main.Config.ORAS
             ? new[] { "Gen 3 Starters", "Gen 2 Starters", "Gen 4 Starters", "Gen 5 Starters" }
             : new[] { "Gen 6 Starters", "Gen 1 Starters" };
+
         private byte[] Data;
         private byte[] FieldData;
         private readonly int Count = Main.Config.ORAS ? 4 : 2;
         private int offset;
+        private static int[] BasicStarter;
+        private static int[][] BasicStarterPerGen;
+
         private void B_Save_Click(object sender, EventArgs e)
         {
             saveData();
+            RandSettings.SetFormSettings(this, groupBox1.Controls);
             Close();
         }
+
         private void B_Cancel_Click(object sender, EventArgs e)
         {
             Close();
@@ -76,6 +85,8 @@ namespace pk3DS
             offset = BitConverter.ToInt32(Data, 0xb8);
             if (!Main.Config.ORAS) // XY have 0x10 bytes of zeroes
                 offset += 0x10;
+            BasicStarter = Legal.BasicStarters_6;
+            BasicStarterPerGen = Legal.BasicStarters;
             for (int i = 0; i < Count; i++)
             {
                 Labels[i].Visible = true;
@@ -84,18 +95,19 @@ namespace pk3DS
                 {
                     foreach (string s in specieslist)
                         Choices[i][j].Items.Add(s);
-                    int species = BitConverter.ToUInt16(Data, offset + (i*3 + j)*0x54);
+                    int species = BitConverter.ToUInt16(Data, offset + (((i * 3) + j)*0x54));
                     Choices[i][j].SelectedIndex = species; // changing index prompts loading of sprite
 
                     Choices[i][j].Visible = Previews[i][j].Visible = true;
                 }
             }
         }
+
         private void saveData()
         {
             for (int i = 0; i < Count; i++)
                 for (int j = 0; j < 3; j++)
-                    Array.Copy(BitConverter.GetBytes((ushort)Choices[i][j].SelectedIndex), 0, Data, offset + (i*3 + j)*0x54, 2);
+                    Array.Copy(BitConverter.GetBytes((ushort)Choices[i][j].SelectedIndex), 0, Data, offset + (((i * 3) + j)*0x54), 2);
 
             // Set the choices back
             int fieldOffset = Main.Config.ORAS ? 0xF906C : 0xF805C;
@@ -116,7 +128,7 @@ namespace pk3DS
 
             for (int i = 0; i < Count; i++)
                 for (int j = 0; j < 3; j++)
-                    Array.Copy(BitConverter.GetBytes((ushort)Choices[i][j].SelectedIndex), 0, FieldData, fieldOffset + entries[i*3 + j]*fieldSize, 2);
+                    Array.Copy(BitConverter.GetBytes((ushort)Choices[i][j].SelectedIndex), 0, FieldData, fieldOffset + (entries[(i * 3) + j]*fieldSize), 2);
 
             File.WriteAllBytes(CROPath, Data); // poke3
             File.WriteAllBytes(FieldPath, FieldData); // field
@@ -145,27 +157,40 @@ namespace pk3DS
             for (int i = 0; i < Count; i++)
             {
                 // Get Species List
-                int gen = int.Parse(Labels[i].Text[4]+"");
-                int[] sL = CHK_Gen.Checked
-                    ? Randomizer.getSpeciesList(gen==1, gen==2, gen==3, gen==4, gen==5, gen==6, false, false, false)
-                    : Randomizer.getSpeciesList(true, true, true, true, true, true, false, false, false);
-                int ctr = 0;
+
+                int gen = int.Parse(Labels[i].Text[4] + "");
+                var rand = new SpeciesRandomizer(Main.Config)
+                {
+                    G1 = !CHK_Gen.Checked || gen == 1,
+                    G2 = !CHK_Gen.Checked || gen == 2,
+                    G3 = !CHK_Gen.Checked || gen == 3,
+                    G4 = !CHK_Gen.Checked || gen == 4,
+                    G5 = !CHK_Gen.Checked || gen == 5,
+                    G6 = !CHK_Gen.Checked || gen == 6,
+
+                    L = CHK_L.Checked,
+                    E = CHK_E.Checked,
+                    Shedinja = false,
+                };
+                rand.Initialize();
                 // Assign Species
                 for (int j = 0; j < 3; j++)
                 {
-                    int species = Randomizer.getRandomSpecies(ref sL, ref ctr);
-
-                    if (CHK_BST.Checked) // Enforce BST
+                    int oldSpecies = BitConverter.ToUInt16(Data, offset + (((i * 3) + j) * 0x54));
+                    if (CHK_BasicStarter.Checked)
                     {
-                        int oldSpecies = BitConverter.ToUInt16(Data, offset + (i*3 + j)*0x54);
-                        PersonalInfo oldpkm = Main.SpeciesStat[oldSpecies]; // Use original species cuz why not.
-                        PersonalInfo pkm = Main.SpeciesStat[species];
-
-                        while (!(pkm.BST * 5 / 6 < oldpkm.BST && pkm.BST * 6 / 5 > oldpkm.BST))
-                        { species = Randomizer.getRandomSpecies(ref sL, ref ctr); pkm = Main.SpeciesStat[species]; }
+                        if (CHK_Gen.Checked)
+                        {
+                            int basic() => (int)(Util.rnd32() % BasicStarterPerGen[gen - 1].Length);
+                            Choices[i][j].SelectedIndex = BasicStarterPerGen[gen - 1][basic()];
+                        }
+                        else {
+                            int basic() => (int)(Util.rnd32() % BasicStarter.Length);
+                            Choices[i][j].SelectedIndex = BasicStarter[basic()];
+                        }
                     }
-
-                    Choices[i][j].SelectedIndex = species;
+                    else
+                        Choices[i][j].SelectedIndex = rand.GetRandomSpecies(i);
                 }
             }
 

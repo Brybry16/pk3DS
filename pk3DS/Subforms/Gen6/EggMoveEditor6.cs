@@ -9,7 +9,7 @@ using System.Windows.Forms;
 using pk3DS.Properties;
 using pk3DS.Core.Structures;
 using pk3DS.Core;
-using pk3DS.Core.Structures.Gen6;
+using pk3DS.Core.Randomizers;
 
 namespace pk3DS
 {
@@ -34,11 +34,14 @@ namespace pk3DS
             CB_Species.ValueMember = "Value";
             CB_Species.DataSource = newlist;
             CB_Species.SelectedIndex = 0;
+            RandSettings.GetFormSettings(this, groupBox1.Controls);
         }
+
         private readonly byte[][] files;
         private int entry = -1;
         private readonly string[] movelist = Main.Config.getText(TextName.MoveNames);
         private bool dumping;
+
         private void setupDGV()
         {
             string[] sortedmoves = (string[])movelist.Clone();
@@ -57,6 +60,7 @@ namespace pk3DS
         }
 
         private EggMoves pkm = new EggMoves6(new byte[0]);
+
         private void getList()
         {
             entry = WinFormsUtil.getIndex(CB_Species);
@@ -78,6 +82,7 @@ namespace pk3DS
 
             dgv.CancelEdit();
         }
+
         private void setList()
         {
             if (entry < 1 || dumping) return;
@@ -100,63 +105,31 @@ namespace pk3DS
 
         private void B_RandAll_Click(object sender, EventArgs e)
         {
-            /*
-             * 3111 Egg Moves Learned by 290 Species (10.73 avg)
-             * 18 is the most
-             * 1000 moves learned were STAB (32.1%)
-             */
-            Random rnd = new Random();
-
             ushort[] HMs = { 15, 19, 57, 70, 127, 249, 291 };
             ushort[] TMs = { };
             if (CHK_HMs.Checked && Main.ExeFSPath != null)
-                TMHMEditor6.getTMHMList(Main.Config.ORAS, ref TMs, ref HMs);
+                TMHMEditor6.getTMHMList(Main.Config.ORAS, out TMs, out HMs);
 
-            int[] banned = new int[HMs.Length];
-            for (int i = 0; i < banned.Length; i++)
-                banned[i] = HMs[i];
-            banned = banned.Concat(new[] { 165, 621 }).ToArray(); // Struggle, Hyperspace Fury
+            List<int> banned = new List<int> { 165, 621 }; // Struggle, Hyperspace Fury
+            if (!CHK_HMs.Checked)
+                banned.AddRange(HMs.Select(z => (int)z));
 
-            // Move Stats
-            Move[] moveTypes = Main.Config.Moves;
-
-            // Personal Stats
-
-            // Set up Randomized Moves
-            int[] randomMoves = Enumerable.Range(1, movelist.Length - 1).Select(i => i).ToArray();
-            Util.Shuffle(randomMoves);
-            int ctr = 0;
-            for (int i = 0; i < CB_Species.Items.Count; i++)
+            setList();
+            var sets = files.Select(z => new EggMoves6(z)).ToArray();
+            var rand = new EggMoveRandomizer(Main.Config, sets)
             {
-                CB_Species.SelectedIndex = i; // Get new Species
-                int count = dgv.Rows.Count - 1;
-                int species = WinFormsUtil.getIndex(CB_Species);
-                if (count == 0)
-                    continue;
-
-                if (CHK_Expand.Checked && (int)NUD_Moves.Value > count)
-                    dgv.Rows.AddCopies(count, (int)NUD_Moves.Value - count);
-                for (int j = 0; j < dgv.Rows.Count - 1; j++)
-                {
-                    // Assign New Moves
-                    bool forceSTAB = CHK_STAB.Checked && rnd.Next(0, 99) < NUD_STAB.Value;
-                    int move = Randomizer.getRandomSpecies(ref randomMoves, ref ctr);
-                    while ( // Move is invalid
-                        !CHK_HMs.Checked && banned.Contains(move) // HM Moves Not Allowed
-                        || forceSTAB && // STAB is required
-                        !Main.Config.Personal[species].Types.Contains(moveTypes[move].Type)
-                        )
-                    {
-                        move = Randomizer.getRandomSpecies(ref randomMoves, ref ctr);
-                    }
-
-                    // Assign Move
-                    dgv.Rows[j].Cells[0].Value = movelist[move];
-                }
-            }
-            CB_Species.SelectedIndex = 0;
-            WinFormsUtil.Alert("All Pokemon's Egg Moves have been randomized!");
+                Expand = CHK_Expand.Checked,
+                ExpandTo = (int)NUD_Moves.Value,
+                STAB = CHK_STAB.Checked,
+                rSTABPercent = NUD_STAB.Value,
+                BannedMoves = banned.ToArray()
+            };
+            rand.Execute();
+            sets.Select(z => z.Write()).ToArray().CopyTo(files, 0);
+            getList();
+            WinFormsUtil.Alert("All Pokémon's Egg Moves have been randomized!", "Press the Dump button to see the new Egg Moves!");
         }
+
         private void B_Dump_Click(object sender, EventArgs e)
         {
             if (DialogResult.Yes != WinFormsUtil.Prompt(MessageBoxButtons.YesNo, "Dump all Egg Moves to Text File?"))
@@ -187,7 +160,9 @@ namespace pk3DS
         private void formClosing(object sender, FormClosingEventArgs e)
         {
             setList();
+            RandSettings.SetFormSettings(this, groupBox1.Controls);
         }
+
         private void calcStats()
         {
             Move[] MoveData = Main.Config.Moves;

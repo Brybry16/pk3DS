@@ -11,7 +11,19 @@
         public abstract int SPA { get; set; }
         public abstract int SPD { get; set; }
 
-        public int[] Stats => new[] { HP, ATK, DEF, SPE, SPA, SPD };
+        public int[] Stats
+        {
+            get => new[] {HP, ATK, DEF, SPE, SPA, SPD};
+            set
+            {
+                HP = value[0];
+                ATK = value[1];
+                DEF = value[2];
+                SPE = value[3];
+                SPA = value[4];
+                SPD = value[5];
+            }
+        }
 
         public abstract int EV_HP { get; set; }
         public abstract int EV_ATK { get; set; }
@@ -32,7 +44,7 @@
         public abstract int [] Abilities { get; set; }
         public abstract int EscapeRate { get; set; }
         public virtual int FormeCount { get; set; }
-        protected internal virtual int FormStatsIndex { get; set; }
+        public virtual int FormStatsIndex { get; protected internal set; }
         public virtual int FormeSprite { get; set; }
         public abstract int BaseEXP { get; set; }
         public abstract int Color { get; set; }
@@ -51,6 +63,7 @@
                 r[i] = (data[i/8] >> (i&7) & 0x1) == 1;
             return r;
         }
+
         protected static byte[] setBits(bool[] bits)
         {
             byte[] data = new byte[bits.Length/8];
@@ -71,6 +84,7 @@
 
             return FormStatsIndex + forme - 1;
         }
+
         public int RandomGender
         {
             get
@@ -88,6 +102,7 @@
                 }
             }
         }
+
         public bool HasFormes => FormeCount > 1;
         public int BST => HP + ATK + DEF + SPE + SPA + SPD;
     }

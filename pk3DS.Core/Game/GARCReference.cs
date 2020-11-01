@@ -19,6 +19,7 @@ namespace pk3DS.Core
             FileNumber = file;
             LanguageVariant = lv;
         }
+
         public GARCReference getRelativeGARC(int offset, string name = "")
         {
             return new GARCReference(FileNumber + offset, name);
@@ -51,6 +52,7 @@ namespace pk3DS.Core
             new GARCReference(072, "gametext", true),
             new GARCReference(080, "storytext", true),
         };
+
         public static readonly GARCReference[] GARCReference_AO =
         {
             new GARCReference(013, "encdata"),
@@ -77,6 +79,7 @@ namespace pk3DS.Core
             new GARCReference(071, "gametext", true),
             new GARCReference(079, "storytext", true),
         };
+
         public static readonly GARCReference[] GARCReference_SMDEMO =
         {
             new GARCReference(011, "move"),
@@ -98,6 +101,7 @@ namespace pk3DS.Core
             new GARCReference(030, "gametext", true),
             new GARCReference(040, "storytext", true),
         };
+
         private static readonly GARCReference[] GARCReference_SM =
         {
             new GARCReference(011, "move"),
@@ -129,13 +133,55 @@ namespace pk3DS.Core
             new GARCReference(040, "storytext", true),
         };
 
+        private static readonly GARCReference[] GARCReference_USUM =
+        {
+            new GARCReference(011, "move"),
+            new GARCReference(012, "eggmove"),
+            new GARCReference(013, "levelup"),
+            new GARCReference(014, "evolution"),
+            new GARCReference(015, "megaevo"),
+            new GARCReference(017, "personal"),
+            new GARCReference(019, "item"),
+
+            new GARCReference(077, "zonedata"),
+            new GARCReference(091, "worlddata"),
+
+            new GARCReference(105, "trclass"),
+            new GARCReference(106, "trdata"),
+            new GARCReference(107, "trpoke"),
+
+            new GARCReference(159, "encounterstatic"),
+
+            new GARCReference(271, "pickup"),
+
+            new GARCReference(281, "maisonpkN"),
+            new GARCReference(282, "maisontrN"),
+            new GARCReference(283, "maisonpkS"),
+            new GARCReference(284, "maisontrS"),
+                
+            // Varied
+            new GARCReference(030, "gametext", true),
+            new GARCReference(040, "storytext", true),
+        };
+
         public static readonly GARCReference[] GARCReference_SN = GARCReference_SM.Concat(
             new[] {
               new GARCReference(082, "encdata"),
             }).ToArray();
+
         public static readonly GARCReference[] GARCReference_MN = GARCReference_SM.Concat(
             new[] {
               new GARCReference(083, "encdata"),
+            }).ToArray();
+
+        public static readonly GARCReference[] GARCReference_US = GARCReference_USUM.Concat(
+            new[] {
+                new GARCReference(082, "encdata"),
+            }).ToArray();
+
+        public static readonly GARCReference[] GARCReference_UM = GARCReference_USUM.Concat(
+            new[] {
+                new GARCReference(083, "encdata"),
             }).ToArray();
     }
 }

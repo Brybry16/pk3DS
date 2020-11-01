@@ -1,7 +1,4 @@
-﻿using pk3DS.Core;
-using pk3DS.Core.Structures.Gen6;
-using pk3DS.Core.Structures.PersonalInfo;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
@@ -10,128 +7,46 @@ using System.Media;
 using System.Text;
 using System.Windows.Forms;
 
+using pk3DS.Core;
+using pk3DS.Core.Randomizers;
+using pk3DS.Core.Structures;
+
 namespace pk3DS
 {
     public partial class RSTE : Form
     {
+        private readonly LearnsetRandomizer learn = new LearnsetRandomizer(Main.Config, Main.Config.Learnsets);
+
         public RSTE(byte[][] trc, byte[][] trd, byte[][] trp)
         {
             trclass = trc;
             trdata = trd;
             trpoke = trp;
             Array.Resize(ref specieslist, Main.Config.MaxSpeciesID + 1);
+            MegaDictionary = GiftEditor6.GetMegaDictionary(Main.Config);
+            rModelRestricted = Main.Config.ORAS ? Legal.Model_AO : Legal.Model_XY;
+            rFinalEvo = Legal.FinalEvolutions_6;
 
             InitializeComponent();
             // String Fetching
             #region Combo Box Arrays
-            trpk_pkm = new[] 
-            {
-                CB_Pokemon_1_Pokemon,
-                CB_Pokemon_2_Pokemon,
-                CB_Pokemon_3_Pokemon,
-                CB_Pokemon_4_Pokemon,
-                CB_Pokemon_5_Pokemon,
-                CB_Pokemon_6_Pokemon,
-            };
-            trpk_lvl = new[] 
-            { 
-                CB_Pokemon_1_Level,
-                CB_Pokemon_2_Level,
-                CB_Pokemon_3_Level,
-                CB_Pokemon_4_Level,
-                CB_Pokemon_5_Level,
-                CB_Pokemon_6_Level,
-            };
-            trpk_item = new[] 
-            { 
-                CB_Pokemon_1_Item,
-                CB_Pokemon_2_Item,
-                CB_Pokemon_3_Item,
-                CB_Pokemon_4_Item,
-                CB_Pokemon_5_Item,
-                CB_Pokemon_6_Item,
-            };
-            trpk_abil = new[] 
-            { 
-                CB_Pokemon_1_Ability,
-                CB_Pokemon_2_Ability,
-                CB_Pokemon_3_Ability,
-                CB_Pokemon_4_Ability,
-                CB_Pokemon_5_Ability,
-                CB_Pokemon_6_Ability,
-            };
-            trpk_m1 = new[]
-            {
-                CB_Pokemon_1_Move_1,
-                CB_Pokemon_2_Move_1,
-                CB_Pokemon_3_Move_1,
-                CB_Pokemon_4_Move_1,
-                CB_Pokemon_5_Move_1,
-                CB_Pokemon_6_Move_1,
-            };
-            trpk_m2 = new[]
-            {
-                CB_Pokemon_1_Move_2,
-                CB_Pokemon_2_Move_2,
-                CB_Pokemon_3_Move_2,
-                CB_Pokemon_4_Move_2,
-                CB_Pokemon_5_Move_2,
-                CB_Pokemon_6_Move_2,
-            };
-            trpk_m3 = new[]
-            {
-                CB_Pokemon_1_Move_3,
-                CB_Pokemon_2_Move_3,
-                CB_Pokemon_3_Move_3,
-                CB_Pokemon_4_Move_3,
-                CB_Pokemon_5_Move_3,
-                CB_Pokemon_6_Move_3,
-            };
-            trpk_m4 = new[]
-            {
-                CB_Pokemon_1_Move_4,
-                CB_Pokemon_2_Move_4,
-                CB_Pokemon_3_Move_4,
-                CB_Pokemon_4_Move_4,
-                CB_Pokemon_5_Move_4,
-                CB_Pokemon_6_Move_4,
-            };
-            trpk_IV = new[]
-            {
-                CB_Pokemon_1_IVs,
-                CB_Pokemon_2_IVs,
-                CB_Pokemon_3_IVs,
-                CB_Pokemon_4_IVs,
-                CB_Pokemon_5_IVs,
-                CB_Pokemon_6_IVs,
-            };
-            trpk_form = new[]
-            {
-                CB_Pokemon_1_Form,
-                CB_Pokemon_2_Form,
-                CB_Pokemon_3_Form,
-                CB_Pokemon_4_Form,
-                CB_Pokemon_5_Form,
-                CB_Pokemon_6_Form,
-            };
-            trpk_gender = new[]
-            {
-                CB_Pokemon_1_Gender,
-                CB_Pokemon_2_Gender,
-                CB_Pokemon_3_Gender,
-                CB_Pokemon_4_Gender,
-                CB_Pokemon_5_Gender,
-                CB_Pokemon_6_Gender,
-            };
+            trpk_pkm =    new[] { CB_Pokemon_1_Pokemon, CB_Pokemon_2_Pokemon, CB_Pokemon_3_Pokemon, CB_Pokemon_4_Pokemon, CB_Pokemon_5_Pokemon, CB_Pokemon_6_Pokemon, };
+            trpk_lvl =    new[] { CB_Pokemon_1_Level,   CB_Pokemon_2_Level,   CB_Pokemon_3_Level,   CB_Pokemon_4_Level,   CB_Pokemon_5_Level,   CB_Pokemon_6_Level,   };
+            trpk_item =   new[] { CB_Pokemon_1_Item,    CB_Pokemon_2_Item,    CB_Pokemon_3_Item,    CB_Pokemon_4_Item,    CB_Pokemon_5_Item,    CB_Pokemon_6_Item,    };
+            trpk_abil =   new[] { CB_Pokemon_1_Ability, CB_Pokemon_2_Ability, CB_Pokemon_3_Ability, CB_Pokemon_4_Ability, CB_Pokemon_5_Ability, CB_Pokemon_6_Ability, };
+            trpk_m1 =     new[] { CB_Pokemon_1_Move_1,  CB_Pokemon_2_Move_1,  CB_Pokemon_3_Move_1,  CB_Pokemon_4_Move_1,  CB_Pokemon_5_Move_1,  CB_Pokemon_6_Move_1,  };
+            trpk_m2 =     new[] { CB_Pokemon_1_Move_2,  CB_Pokemon_2_Move_2,  CB_Pokemon_3_Move_2,  CB_Pokemon_4_Move_2,  CB_Pokemon_5_Move_2,  CB_Pokemon_6_Move_2,  };
+            trpk_m3 =     new[] { CB_Pokemon_1_Move_3,  CB_Pokemon_2_Move_3,  CB_Pokemon_3_Move_3,  CB_Pokemon_4_Move_3,  CB_Pokemon_5_Move_3,  CB_Pokemon_6_Move_3,  };
+            trpk_m4 =     new[] { CB_Pokemon_1_Move_4,  CB_Pokemon_2_Move_4,  CB_Pokemon_3_Move_4,  CB_Pokemon_4_Move_4,  CB_Pokemon_5_Move_4,  CB_Pokemon_6_Move_4,  };
+            trpk_IV =     new[] { CB_Pokemon_1_IVs,     CB_Pokemon_2_IVs,     CB_Pokemon_3_IVs,     CB_Pokemon_4_IVs,     CB_Pokemon_5_IVs,     CB_Pokemon_6_IVs,     };
+            trpk_form =   new[] { CB_Pokemon_1_Form,    CB_Pokemon_2_Form,    CB_Pokemon_3_Form,    CB_Pokemon_4_Form,    CB_Pokemon_5_Form,    CB_Pokemon_6_Form,    };
+            trpk_gender = new[] { CB_Pokemon_1_Gender,  CB_Pokemon_2_Gender,  CB_Pokemon_3_Gender,  CB_Pokemon_4_Gender,  CB_Pokemon_5_Gender,  CB_Pokemon_6_Gender,  };
             #endregion
             Setup();
         }
+
         private string[][] AltForms;
-        internal static readonly Random rand = new Random();
-        internal static uint rnd32()
-        {
-            return (uint)rand.Next(1 << 30) << 2 | (uint)rand.Next(1 << 2);
-        }
+        internal static uint Rand() => Util.rnd32();
         private bool start = true;
         private bool loading = true;
         private int index = -1;
@@ -163,18 +78,20 @@ namespace pk3DS
         #endregion
 
         // Ability Loading
-        private void refreshFormAbility(object sender, EventArgs e)
+        private void RefreshFormAbility(object sender, EventArgs e)
         {
             int i = Array.IndexOf(trpk_form, sender as ComboBox);
-            refreshPKMSlotAbility(i);
+            RefreshPKMSlotAbility(i);
         }
-        private void refreshSpeciesAbility(object sender, EventArgs e)
+
+        private void RefreshSpeciesAbility(object sender, EventArgs e)
         {
             int i = Array.IndexOf(trpk_pkm, sender as ComboBox);
             FormUtil.setForms(trpk_pkm[i].SelectedIndex, trpk_form[i], AltForms);
-            refreshPKMSlotAbility(i);
+            RefreshPKMSlotAbility(i);
         }
-        private void refreshPKMSlotAbility(int slot)
+
+        private void RefreshPKMSlotAbility(int slot)
         {
             int previousAbility = trpk_abil[slot].SelectedIndex;
 
@@ -191,10 +108,10 @@ namespace pk3DS
 
             trpk_abil[slot].SelectedIndex = previousAbility;
 
-            showTeams(slot);
+            ShowTeams(slot);
         }
         // Set Loading
-        private void changeTrainerType(object sender, EventArgs e)
+        private void ChangeTrainerType(object sender, EventArgs e)
         {
             if (start || loading) return;
             int pkm = CB_numPokemon.SelectedIndex;
@@ -241,7 +158,7 @@ namespace pk3DS
         }
 
         // Dumping
-        private string getTRSummary()
+        private string GetTRSummary()
         {
             string toret = "======" + Environment.NewLine;
 
@@ -269,20 +186,22 @@ namespace pk3DS
                     if (trpk_m4[i].SelectedIndex > 0) toret += " / " + trpk_m4[i].Text;
                     toret += ")";
                 }
-                toret += " IVs: All " + Convert.ToInt32(trpk_IV[i].SelectedIndex) / 8;
+                toret += " IVs: All " + (Convert.ToInt32(trpk_IV[i].SelectedIndex) / 8);
                 toret += Environment.NewLine;
             }
             toret += Environment.NewLine;
             return toret;
         }
+
         private bool dumping;
+
         private void B_Dump_Click(object sender, EventArgs e)
         {
             string toret = ""; dumping = true;
             for (int i = 1; i < CB_TrainerID.Items.Count; i++)
             {
                 CB_TrainerID.SelectedIndex = i;
-                string tdata = getTRSummary();
+                string tdata = GetTRSummary();
                 toret += tdata;
             }
             SaveFileDialog sfd = new SaveFileDialog {FileName = "Battles.txt", Filter = "Text File|*.txt"};
@@ -298,12 +217,14 @@ namespace pk3DS
 
         // Change Read/Write
         private trdata6 tr;
-        private void changeTrainerIndex(object sender, EventArgs e)
+
+        private void ChangeTrainerIndex(object sender, EventArgs e)
         {
-            if (!dumping && index > -1) writeFile();
-            readFile(); // Load the new file.
+            if (!dumping && index > -1) WriteFile();
+            ReadFile(); // Load the new file.
         }
-        private void readFile()
+
+        private void ReadFile()
         {
             if (start) return;
             index = CB_TrainerID.SelectedIndex;
@@ -330,7 +251,7 @@ namespace pk3DS
             checkBox_Healer.Checked = tr.Healer;
             CB_Money.SelectedIndex = tr.Money;
             CB_Prize.SelectedIndex = tr.Prize;
-            
+
             // Load Pokemon Data
             for (int i = 0; i < tr.NumPokemon; i++)
             {
@@ -339,7 +260,7 @@ namespace pk3DS
                 trpk_pkm[i].SelectedIndex = tr.Team[i].Species;
                 FormUtil.setForms(tr.Team[i].Species, trpk_form[i], AltForms);
                 trpk_form[i].SelectedIndex = tr.Team[i].Form % trpk_form[i].Items.Count; // stupid X/Y buggy edge cases (220 / 222)
-                refreshPKMSlotAbility(i); // Repopulate Abilities
+                RefreshPKMSlotAbility(i); // Repopulate Abilities
 
                 trpk_abil[i].SelectedIndex = tr.Team[i].Ability;
                 trpk_gender[i].SelectedIndex = tr.Team[i].Gender;
@@ -351,17 +272,17 @@ namespace pk3DS
                 trpk_m4[i].SelectedIndex = tr.Team[i].Moves[3];
             }
             loading = false;
-            changeTrainerType(null, null); // Prompt cleaning update of PKM fields
+            ChangeTrainerType(null, null); // Prompt cleaning update of PKM fields
 
             // Refresh Team View
-            if (!loading && !randomizing)
+            if (!loading)
             {
-                for (int i = 0; i < 6; i++) showTeams(i); 
+                for (int i = 0; i < 6; i++) ShowTeams(i);
                 // showText(); // Commented out for now, have to figure out how text is assigned.
             }
-
         }
-        private void writeFile()
+
+        private void WriteFile()
         {
             // Set Trainer Data
             tr.Moves = checkBox_Moves.Checked;
@@ -369,7 +290,7 @@ namespace pk3DS
             tr.Class = CB_Trainer_Class.SelectedIndex;
             tr.BattleType = (byte)CB_Battle_Type.SelectedIndex;
             tr.NumPokemon = (byte)CB_numPokemon.SelectedIndex;
-            if (tr.NumPokemon == 0) 
+            if (tr.NumPokemon == 0)
                 tr.NumPokemon = 1; // No empty teams!
             tr.Items[0] = (ushort)CB_Item_1.SelectedIndex;
             tr.Items[1] = (ushort)CB_Item_2.SelectedIndex;
@@ -399,35 +320,35 @@ namespace pk3DS
                 tr.Team[i].Moves[2] = (ushort)trpk_m3[i].SelectedIndex;
                 tr.Team[i].Moves[3] = (ushort)trpk_m4[i].SelectedIndex;
             }
-            byte[] trd = tr.Write();
-            trdata[index] = trd;
-            byte[] trp = tr.WriteTeam();
-            trpoke[index] = trp;
+            trdata[index] = tr.Write();
+            trpoke[index] = tr.WriteTeam();
         }
 
         // Image Displays
-        private void changeTeam(object sender, EventArgs e)
+        private void ChangeTeam(object sender, EventArgs e)
         {
-            if (loading || randomizing) return;
+            if (loading) return;
 
             int gendSlot = Array.IndexOf(trpk_gender, sender as ComboBox);
             int itemSlot = Array.IndexOf(trpk_item, sender as ComboBox);
-            showTeams(gendSlot < 0 ? itemSlot : gendSlot);
+            ShowTeams(gendSlot < 0 ? itemSlot : gendSlot);
         }
-        private void showTeams(int i)
+
+        private void ShowTeams(int i)
         {
-            if (tr == null || randomizing) return;
+            if (tr == null) return;
             if (i >= tr.Team.Length) { pba[i].Image = null; return; }
             Bitmap rawImg = WinFormsUtil.getSprite(tr.Team[i].Species, tr.Team[i].Form, tr.Team[i].Gender, tr.Team[i].Item, Main.Config);
             pba[i].Image = WinFormsUtil.scaleImage(rawImg, 2);
         }
-        private void showText()
+
+        private void ShowText()
         {
             if (index * 2 >= trText.Length) return;
             TB_Text1.Text = trText[index * 2];
-            TB_Text2.Text = trText[index * 2 + 1];
+            TB_Text2.Text = trText[(index * 2) + 1];
         }
-        
+
         private void Setup()
         {
             start = true;
@@ -437,11 +358,11 @@ namespace pk3DS
             Array.Resize(ref trName, trdata.Length);
             CB_TrainerID.Items.Clear();
             for (int i = 0; i < trdata.Length; i++)
-                CB_TrainerID.Items.Add(string.Format("{1} - {0}", i.ToString("000"), trName[i] ?? "UNKNOWN"));
+                CB_TrainerID.Items.Add($"{trName[i] ?? "UNKNOWN"} - {i:000}");
 
             CB_Trainer_Class.Items.Clear();
             for (int i = 0; i < trClass.Length; i++)
-                CB_Trainer_Class.Items.Add(string.Format("{1} - {0}", i.ToString("000"), trClass[i]));
+                CB_Trainer_Class.Items.Add($"{trClass[i]} - {i:000}");
 
             specieslist[0] = "---";
             abilitylist[0] = itemlist[0] = movelist[0] = "";
@@ -478,9 +399,9 @@ namespace pk3DS
                     trpk_IV[i].Items.Add(z.ToString());
 
                 trpk_gender[i].Items.Clear();
-                trpk_gender[i].Items.Add("- / G/Random");
-                trpk_gender[i].Items.Add("♂ / M");
-                trpk_gender[i].Items.Add("♀ / F");
+                trpk_gender[i].Items.Add("- / Genderless/Random");
+                trpk_gender[i].Items.Add("♂ / Male");
+                trpk_gender[i].Items.Add("♀ / Female");
 
                 trpk_form[i].Items.Add("");
 
@@ -509,73 +430,92 @@ namespace pk3DS
             CB_Battle_Type.Items.Add("Double");
             CB_Battle_Type.Items.Add("Triple");
             CB_Battle_Type.Items.Add("Rotation");
-            CB_Battle_Type.Items.Add("Horde");
-            megaEvos = Main.Config.ORAS 
-                ? new[] { 15, 18, 80, 208, 254, 260, 302, 319, 323, 334, 362, 373, 376, 380, 381, 428, 475, 531, 719, 3, 6, 9, 65, 94, 115, 127, 130, 142, 150, 181, 212, 214, 229, 248, 257, 282, 303, 306, 308, 310, 354, 359, 445, 448, 460 } 
+            if (Main.Config.ORAS) CB_Battle_Type.Items.Add("Horde");
+            megaEvos = Main.Config.ORAS
+                ? new[] { 15, 18, 80, 208, 254, 260, 302, 319, 323, 334, 362, 373, 376, 380, 381, 428, 475, 531, 719, 3, 6, 9, 65, 94, 115, 127, 130, 142, 150, 181, 212, 214, 229, 248, 257, 282, 303, 306, 308, 310, 354, 359, 445, 448, 460 }
                 : new[] { 3, 6, 9, 65, 94, 115, 127, 130, 142, 150, 181, 212, 214, 229, 248, 257, 282, 303, 306, 308, 310, 354, 359, 445, 448, 460 };
-            
+
             CB_TrainerID.SelectedIndex = 1;
             start = false;
-            readFile();
+            ReadFile();
         }
 
-        private bool randomizing;
-        public static bool rPKM, rSmart, rLevel, rMove, rNoMove, rAbility, rDiffAI, 
+        public static bool rPKM, rSmart, rLevel, rMove, rMetronome, rNoMove, rForceHighPower, rAbility, rDiffAI,
             rDiffIV, rClass, rGift, rItem, rDoRand, rRandomMegas, rGymE4Only,
-            rTypeTheme, rTypeGymTrainers, rOnlySingles, rDMG, rSTAB, r6PKM;
+            rTypeTheme, rTypeGymTrainers, rOnlySingles, rDMG, rSTAB, r6PKM, rForceFullyEvolved;
+
+        public static bool rNoFixedDamage;
         internal static bool[] rThemedClasses = { };
         private static string[] rTags;
         private static int[] megaEvos;
         public static int[] rIgnoreClass, rEnsureMEvo;
         public static int rDMGCount, rSTABCount;
         private int[] mEvoTypes;
+        private static int[] rModelRestricted;
+        public static int[] rFinalEvo;
         private string[] rImportant;
         private readonly List<string> Tags = new List<string>();
         private readonly Dictionary<string, int> TagTypes = new Dictionary<string, int>();
         public static int[] sL; // Random Species List
-        public static decimal rGiftPercent, rLevelMultiplier;
+        public static decimal rGiftPercent, rLevelMultiplier, rMinPKM, rMaxPKM, rForceFullyEvolvedLevel, rForceHighPowerLevel;
+
         private void B_Randomize_Click(object sender, EventArgs e)
         {
-            rPKM = rMove = rAbility = rDiffAI = rDiffIV = rClass = rGift = rItem = rDoRand = false; // init to false
-            rGiftPercent = 0; // 0
+            rPKM = rMove = rMetronome = rAbility = rDiffAI = rDiffIV = rClass = rGift = rItem = rDoRand = false; // init to false
+            rGiftPercent = 0;
+            rForceFullyEvolvedLevel = 0;
             new TrainerRand().ShowDialog(); // Open Randomizer Config to get config vals
             if (rDoRand)
                 Randomize();
         }
+
         private void Randomize()
         {
-            int[] banned = { 165, 621 }; // Struggle, Hyperspace Fury
+            List<int> banned = new List<int> { 165, 621 }; // Struggle, Hyperspace Fury
+            if (rNoFixedDamage)
+                banned.AddRange(MoveRandomizer.FixedDamageMoves);
+            var move = new MoveRandomizer(Main.Config)
+            {
+                rDMG = rDMG,
+                rSTAB = rSTAB,
+                rSTABCount = rSTABCount,
+                rDMGCount = rDMGCount,
+                BannedMoves = banned,
+            };
+
             rImportant = new string[CB_TrainerID.Items.Count];
             rTags = Main.Config.ORAS ? GetTagsORAS() : GetTagsXY();
             mEvoTypes = GetMegaEvolvableTypes();
             List<int> GymE4Types = new List<int>();
 
             // Fetch Move Stats for more difficult randomization
-            var moveData = Main.Config.Moves;
-            int[] moveList = Enumerable.Range(1, movelist.Length - 1).ToArray();
-            int mctr = 0;
-            Util.Shuffle(moveList);
 
             if (rEnsureMEvo.Length > 0)
             {
                 if (mEvoTypes.Length < 13 && rTypeTheme)
                 {
-                    WinFormsUtil.Alert("There are insufficient Types with at least one mega evolution to Guarantee story Mega Evos while keeping Type theming.", 
+                    WinFormsUtil.Alert("There are insufficient Types with at least one mega evolution to Guarantee story Mega Evos while keeping Type theming.",
                     "Re-Randomize Personal or don't choose both options."); return; }
                 GymE4Types.AddRange(mEvoTypes);
             }
             else
+            {
                 GymE4Types.AddRange(Enumerable.Range(0, types.Length).ToArray());
+            }
+
             foreach (int t1 in rEnsureMEvo.Where(t1 => rTags[t1] != "" && !TagTypes.Keys.Contains(rTags[t1])))
             {
                 int t;
                 if (rTags[t1].Contains("GYM") || rTags[t1].Contains("ELITE") || rTags[t1].Contains("CHAMPION"))
                 {
-                    t = GymE4Types[(int)(rnd32() % GymE4Types.Count)];
+                    t = GymE4Types[(int)(Rand() % GymE4Types.Count)];
                     GymE4Types.Remove(t);
                 }
                 else
-                    t = mEvoTypes[rnd32() % mEvoTypes.Length];
+                {
+                    t = mEvoTypes[Rand() % mEvoTypes.Length];
+                }
+
                 TagTypes[rTags[t1]] = t;
             }
             foreach (string t1 in Tags)
@@ -585,242 +525,295 @@ namespace pk3DS
                     int t;
                     if (t1.Contains("GYM") || t1.Contains("ELITE") || t1.Contains("CHAMPION"))
                     {
-                        t = GymE4Types[(int)(rnd32() % GymE4Types.Count)];
+                        t = GymE4Types[(int)(Rand() % GymE4Types.Count)];
                         GymE4Types.Remove(t);
                     }
                     else
-                        t = (int)(rnd32() % types.Length);
+                    {
+                        t = (int)(Rand() % types.Length);
+                    }
 
                     TagTypes[t1] = t;
                 }
                 Console.WriteLine(t1 + ": " + types[TagTypes[t1]]);
             }
-            randomizing = true;
+
+            CB_TrainerID.SelectedIndex = 0; // fake a writeback
+            ushort[] itemvals = Main.Config.ORAS ? Legal.Pouch_Items_AO : Legal.Pouch_Items_XY;
+            itemvals = itemvals.Concat(Legal.Pouch_Berry_XY).ToArray();
+
+            string[] ImportantClasses = {"GYM", "ELITE", "CHAMPION"};
             for (int i = 1; i < CB_TrainerID.Items.Count; i++)
             {
-                CB_TrainerID.SelectedIndex = i; // data is loaded
-
-                // Setup
-                checkBox_Moves.Checked = rMove || !rNoMove && checkBox_Moves.Checked;
-                checkBox_Item.Checked = rItem || checkBox_Item.Checked;
-
-                if (r6PKM && rImportant[i] != null) // skip the first rival battles
-                {
-                    // Copy the last slot to random pokemon
-                    int lastPKM = Math.Max(CB_numPokemon.SelectedIndex - 1, 0); // 0,1-6 => 0-5 (never is 0)
-                    CB_numPokemon.SelectedIndex = 6;
-                    for (int f = lastPKM + 1; f < 6; f++)
-                    {
-                        trpk_pkm[f].SelectedIndex = trpk_IV[lastPKM].SelectedIndex;
-                        trpk_lvl[f].SelectedIndex = Math.Min(trpk_lvl[f - 1].SelectedIndex + 1, 100);
-                    }
-                }
-
-                // Randomize Trainer Stats
-                if (rDiffAI)
-                {
-                    if (CB_Battle_Type.SelectedIndex == 0)
-                        CB_AI.SelectedIndex = 7; // Max Single
-                    else if (CB_Battle_Type.SelectedIndex == 1)
-                        CB_AI.SelectedIndex = 135; // Max Double
-                }
-                if (
-                    rClass // Classes selected to be randomized
-                    && (!rOnlySingles || CB_Battle_Type.SelectedIndex == 0) //  Nonsingles only get changed if rOnlySingles
-                    && !rIgnoreClass.Contains(CB_Trainer_Class.SelectedIndex) // Current class isn't a special class
-                    )
-                {
-                    int rv = (int)(rnd32() % CB_Trainer_Class.Items.Count);
-                    // Ensure the Random Class isn't an exclusive class
-                    while (rIgnoreClass.Contains(rv) && !trClass[rv].StartsWith("[~")) // don't allow disallowed classes
-                        rv = (int)(rnd32() % CB_Trainer_Class.Items.Count);
-
-                    CB_Trainer_Class.SelectedIndex = rv;
-                }
-
-                if (rGift && rnd32() % 100 < rGiftPercent)
-                #region Random Prize Logic
-                {
-                    ushort[] items;
-                    uint rnd = rnd32() % 10;
-                    if (rnd < 2) // held item
-                        items = Main.Config.ORAS ? Legal.Pouch_Items_ORAS : Legal.Pouch_Items_XY;
-                    else if (rnd < 5) // medicine
-                        items = Main.Config.ORAS ? Legal.Pouch_Medicine_ORAS : Legal.Pouch_Medicine_XY;
-                    else // berry
-                        items = Legal.Pouch_Berry_XY;
-                    CB_Prize.SelectedIndex = items[rnd32() % items.Length];
-                }
-                #endregion
-                else if (rGift)
-                    CB_Prize.SelectedIndex = 0;
-
-                ushort[] itemvals = Main.Config.ORAS ? Legal.Pouch_Items_ORAS : Legal.Pouch_Items_XY;
-                itemvals = itemvals.Concat(Legal.Pouch_Berry_XY).ToArray();
-                int itemC = itemvals.Length;
-                int ctr = 0;
-
                 // Trainer Type/Mega Evo
                 int type = GetRandomType(i);
                 bool mevo = rEnsureMEvo.Contains(i);
-                bool typerand = rTypeTheme && !rGymE4Only ||
-                                rTypeTheme && rImportant[i] != null && (rImportant[i].Contains("GYM") || rImportant[i].Contains("ELITE") || rImportant[i].Contains("CHAMPION"));
+                bool typerand = (rTypeTheme && !rGymE4Only) || (rTypeTheme && rImportant[i] != null && ImportantClasses.Contains(rImportant[i]));
+                rSpeciesRand.rType = typerand;
 
-                // Randomize Pokemon
-                for (int p = 0; p < CB_numPokemon.SelectedIndex; p++)
+                byte[] trd = trdata[i];
+                byte[] trp = trpoke[i];
+                var t = new trdata6(trd, trp, Main.Config.ORAS)
                 {
-                    PersonalInfo oldpkm = Main.SpeciesStat[trpk_pkm[p].SelectedIndex];
-                    PersonalInfo pkm = null;
-                    if (rPKM)
-                    {
-                        // randomize pokemon
-                        int species;
-                        pkm = Main.SpeciesStat[species = Randomizer.getRandomSpecies(ref sL, ref ctr)];
-                        if (typerand)
-                        {
-                            int tries = 0;
-                            while ((pkm.Types[0] != type && pkm.Types[1] != type || mevo && p == CB_numPokemon.SelectedIndex - 1 && !megaEvos.Contains(species)) && tries < 0x10000)
-                                if (p == CB_numPokemon.SelectedIndex - 1 && mevo)
-                                    pkm = Main.SpeciesStat[species = GetRandomMegaEvolvablePokemon(type)];
-                                else if (rSmart) // Get a new Pokemon with a close BST
-                                {
-                                    pkm = Main.SpeciesStat[species = Randomizer.getRandomSpecies(ref sL, ref ctr)];
-                                    while (!(pkm.BST * (5 - ++tries / Main.Config.MaxSpeciesID) / 6 < oldpkm.BST && pkm.BST * (6 + ++tries / Main.Config.MaxSpeciesID) / 5 > oldpkm.BST))
-                                    {
-                                        pkm = Main.SpeciesStat[species = Randomizer.getRandomSpecies(ref sL, ref ctr)];
-                                    }
-                                }
-                                else
-                                    pkm = Main.SpeciesStat[species = Randomizer.getRandomSpecies(ref sL, ref ctr)];
-                        }
-                        else if (p == CB_numPokemon.SelectedIndex - 1 && mevo)
-                            pkm = Main.SpeciesStat[species = megaEvos[rnd32() % megaEvos.Length]];
-                        else if (rSmart) // Get a new Pokemon with a close BST
-                        {
-                            int tries = 0;
-                            while (!(pkm.BST * (5 - ++tries / Main.Config.MaxSpeciesID) / 6 < oldpkm.BST && pkm.BST * (6 + ++tries / Main.Config.MaxSpeciesID) / 5 > oldpkm.BST))
-                            {
-                                pkm = Main.SpeciesStat[species = Randomizer.getRandomSpecies(ref sL, ref ctr)];
-                            }
-                        }
+                    Moves = rMove || (!rNoMove && checkBox_Moves.Checked),
+                    Item = rItem || checkBox_Item.Checked
+                };
 
-                        trpk_pkm[p].SelectedIndex = species;
-                        // Set Gender to Random
-                        trpk_gender[p].SelectedIndex = 0;
+                SetMinMaxPKM(t);
+                SetFullParties(t, rImportant[i] == null);
+                RandomizeTrainerAIClass(t, trClass);
+                RandomizeTrainerPrizeItem(t);
+                RandomizeTeam(t, move, learn, itemvals, type, mevo, typerand);
 
-                        if (trpk_form[p].Items.Count > 0)
-                            trpk_form[p].SelectedIndex = 0;
-                        // Randomize form
-                        if (trpk_form[p].Items.Count > 0 && (!megaEvos.Contains(species) || rRandomMegas))
-                            trpk_form[p].SelectedIndex = (int)(rnd32() % trpk_form[p].Items.Count);
-                    }
-                    if (rLevel)
-                        trpk_lvl[p].SelectedIndex = Randomizer.getModifiedLevel(trpk_lvl[p].SelectedIndex, rLevelMultiplier);
-                    if (rAbility)
-                        trpk_abil[p].SelectedIndex = (int)(1 + rnd32() % 3);
-                    if (rDiffIV)
-                        trpk_IV[p].SelectedIndex = 255;
-                    if (mevo && p == CB_numPokemon.SelectedIndex - 1)
-                    {
-                        int[] megastones = GetMegaStones(trpk_pkm[p].SelectedIndex);
-                        if (megastones.Length > 0)
-                            trpk_item[p].SelectedIndex = megastones[rnd32() % megastones.Length];
-                    }
-                    else if (rItem)
-                        #region RandomItem
-                        trpk_item[p].SelectedIndex = itemvals[rnd32() % itemC];
-                        #endregion
-                    
-                    if (rMove)
-                    {
-                        pkm = pkm ?? Main.SpeciesStat[trpk_pkm[p].SelectedIndex];
-                        int[] pkMoves = new int[4];
-                        var moves = new[] {trpk_m1[p], trpk_m2[p], trpk_m3[p], trpk_m4[p]};
-
-                        int loopctr = 0;
-                    getMoves: // Get list of moves
-                        loopctr++;
-                        for (int m = 0; m < 4; m++)
-                        {
-                            int mv = Randomizer.getRandomSpecies(ref moveList, ref mctr);
-                            while (banned.Contains(mv) || pkMoves.Contains(mv))
-                                mv = Randomizer.getRandomSpecies(ref moveList, ref mctr);
-
-                            pkMoves[m] = mv;
-                        }
-
-                        // If a certain amount of damaging moves is required, check.
-                        if (rDMG)
-                        {
-                            int damagingMoves = pkMoves.Count(move => moveData[move].Category != 0);
-                            if (damagingMoves < rDMGCount && loopctr < 666)
-                                goto getMoves;
-                        }
-                        if (rSTAB)
-                        {
-                            int STAB = pkMoves.Count(move => pkm.Types.Contains(moveData[move].Type));
-                            if (STAB < rSTABCount && loopctr < 666)
-                                goto getMoves;
-                        }
-
-                        // Assign Moves
-                        for (int m = 0; m < 4; m++)
-                            moves[m].SelectedIndex = pkMoves[m];
-                    }
-                }
+                trdata[i] = t.Write();
+                trpoke[i] = t.WriteTeam();
             }
-            randomizing = false;
             CB_TrainerID.SelectedIndex = 1;
             WinFormsUtil.Alert("Randomized all Trainers according to specification!", "Press the Dump to .TXT button to view the new Trainer information!");
+        }
+
+        private static void RandomizeTeam(trdata6 t, MoveRandomizer move, LearnsetRandomizer learn, ushort[] itemvals, int type, bool mevo, bool typerand)
+        {
+            int last = t.Team.Length - 1;
+            for (int p = 0; p < t.Team.Length; p++)
+            {
+                var pk = t.Team[p];
+                int[] stones = null;
+                if (rPKM)
+                {
+                    // randomize pokemon
+                    int species;
+                    if (typerand)
+                    {
+                        species = rSpeciesRand.GetRandomSpeciesType(pk.Species, type);
+                        if (p == last && mevo)
+                        {
+                            int tries = 0;
+                            do { stones = GetRandomMega(out species); }
+                            while (Main.Config.Personal[species].Types.All(z => z != type) && tries++ < 100);
+                        }
+                    }
+                    else if (p == last && mevo)
+                    {
+                        stones = GetRandomMega(out species);
+                    }
+                    else
+                    {
+                        species = rSpeciesRand.GetRandomSpecies(pk.Species);
+                    }
+
+                    pk.Species = (ushort)species;
+                    pk.Gender = 0; // Set Gender to Random
+                    bool mega = rRandomMegas & !(mevo && p == last); // except if mega evolution is forced for the last slot
+                    pk.Form = (ushort)Randomizer.GetRandomForme(pk.Species, mega, true, Main.SpeciesStat);
+                }
+                if (rLevel)
+                    pk.Level = (ushort)Randomizer.getModifiedLevel(pk.Level, rLevelMultiplier);
+                if (rAbility)
+                    pk.Ability = (int)(1 + (Rand() % 3));
+                if (rDiffIV)
+                    pk.IVs = 255;
+
+                if (mevo && p == last && stones != null)
+                    pk.Item = (ushort)stones[Rand() % stones.Length];
+                else if (rItem)
+                    pk.Item = itemvals[Rand() % itemvals.Length];
+
+                if (rForceFullyEvolved && pk.Level >= rForceFullyEvolvedLevel && !rFinalEvo.Contains(pk.Species))
+                {
+                    int randFinalEvo() => (int)(Util.rnd32() % rFinalEvo.Length);
+                    pk.Species = (ushort)rFinalEvo[randFinalEvo()];
+                    pk.Form = (ushort)Randomizer.GetRandomForme(pk.Species, rRandomMegas, true, Main.SpeciesStat);
+                }
+
+                // random
+                if (rMove)
+                {
+                    var pkMoves = move.GetRandomMoveset(pk.Species, 4);
+                    for (int m = 0; m < 4; m++)
+                        pk.Moves[m] = (ushort)pkMoves[m];
+                }
+
+                // levelup
+                if (rNoMove)
+                {
+                    t.Moves = true;
+                    var pkMoves = learn.GetCurrentMoves(pk.Species, pk.Form, pk.Level, 4);
+                    for (int m = 0; m < 4; m++)
+                        pk.Moves[m] = (ushort)pkMoves[m];
+                }
+
+                if (rMetronome)
+                {
+                    t.Moves = true;
+                    var pkMoves = new[] { 118, 0, 0, 0 };
+                    for (int m = 0; m < 4; m++)
+                        pk.Moves[m] = (ushort)pkMoves[m];
+                }
+
+                // high-power attacks
+                if (rForceHighPower && pk.Level >= rForceHighPowerLevel)
+                {
+                    var pkMoves = learn.GetHighPoweredMoves(pk.Species, pk.Form, 4);
+                    for (int m = 0; m < 4; m++)
+                        pk.Moves[m] = (ushort)pkMoves[m];
+                }
+            }
+        }
+
+        private static void SetMinMaxPKM(trdata6 t)
+        {
+            int lastPKM = Math.Max(t.NumPokemon - 1, 0); // 0,1-6 => 0-5 (never is 0)
+            var avgBST = (int)t.Team.Average(pk => Main.SpeciesStat[pk.Species].BST);
+            int avgLevel = (int)t.Team.Average(pk => pk.Level);
+            var pinfo = Main.SpeciesStat.OrderBy(pk => Math.Abs(avgBST - pk.BST)).First();
+            int avgSpec = Array.IndexOf(Main.SpeciesStat, pinfo);
+
+            // set minimum pkm, don't modify hordes
+            if (t.NumPokemon < rMinPKM && t.BattleType != 4)
+            {
+                t.NumPokemon = (byte)rMinPKM;
+                for (int f = lastPKM + 1; f < t.NumPokemon; f++)
+                {
+                    Array.Resize(ref t.Team, (int)rMinPKM);
+                    t.Team[f] = // clone last pkm, keeping an average level for all new pkm
+                        new trdata6.Pokemon(t.Team[lastPKM].Write(t.Item, t.Moves), t.Item, t.Moves)
+                        {
+                            Species = (ushort)rSpeciesRand.GetRandomSpecies(avgSpec),
+                            Level = (ushort)avgLevel,
+                        };
+                }
+            }
+
+            // set maximum pkm, don't modify hordes
+            if (t.NumPokemon > rMaxPKM && t.BattleType != 4)
+            {
+                Array.Resize(ref t.Team, (int)rMaxPKM);
+                t.NumPokemon = (byte)rMaxPKM;
+            }
+        }
+
+        private static void SetFullParties(trdata6 t, bool important)
+        {
+            int lastPKM = Math.Max(t.NumPokemon - 1, 0); // 0,1-6 => 0-5 (never is 0)
+            var avgBST = (int)t.Team.Average(pk => Main.SpeciesStat[pk.Species].BST);
+            int avgLevel = (int)t.Team.Average(pk => pk.Level);
+            var pinfo = Main.SpeciesStat.OrderBy(pk => Math.Abs(avgBST - pk.BST)).First();
+            int avgSpec = Array.IndexOf(Main.SpeciesStat, pinfo);
+
+            // 6 pkm for important trainers, skip the first rival battles
+            if (!r6PKM || important)
+                return;
+
+            t.NumPokemon = 6;
+            for (int f = lastPKM + 1; f < t.NumPokemon; f++)
+            {
+                Array.Resize(ref t.Team, t.NumPokemon);
+                t.Team[f] = // clone last pkm, keeping an average level for all new pkm
+                    new trdata6.Pokemon(t.Team[lastPKM].Write(t.Item, t.Moves), t.Item, t.Moves)
+                    {
+                        Species = (ushort)rSpeciesRand.GetRandomSpecies(avgSpec),
+                        Level = (ushort)avgLevel,
+                    };
+            }
+        }
+
+        private static void RandomizeTrainerAIClass(trdata6 t, string[] trClass)
+        {
+            if (rDiffAI)
+                t.AI |= 7; // Set first 3 bits, keep any other flag if present
+
+            if (rClass && rModelRestricted.Contains(t.Class) && !rIgnoreClass.Contains(t.Class)) // shuffle classes with 3D models
+            {
+                int randClass() => (int) (Rand() % rModelRestricted.Length);
+                t.Class = rModelRestricted[randClass()];
+            }
+            else
+            if (
+                rClass // Classes selected to be randomized
+                && (!rOnlySingles || t.BattleType == 0) //  Nonsingles only get changed if rOnlySingles
+                && !rIgnoreClass.Contains(t.Class) // Current class isn't a special class
+                )
+            {
+                int randClass() => (int)(Rand() % trClass.Length);
+                int rv; do { rv = randClass(); }
+                while (rIgnoreClass.Contains(rv) || trClass[rv].StartsWith("[~") || (Main.Config.ORAS && (rv >= 0 && rv <= 63)) || (rv >= 68 && rv <= 126)); // don't allow disallowed classes
+                t.Class = rv;
+            }
+        }
+
+        private static void RandomizeTrainerPrizeItem(trdata6 t)
+        {
+            if (rGift && Rand() % 100 < rGiftPercent)
+            {
+                ushort[] items;
+                uint rnd = Rand() % 10;
+                if (rnd < 2) // held item
+                    items = Main.Config.ORAS ? Legal.Pouch_Items_AO : Legal.Pouch_Items_XY;
+                else if (rnd < 5) // medicine
+                    items = Main.Config.ORAS ? Legal.Pouch_Medicine_AO : Legal.Pouch_Medicine_XY;
+                else // berry
+                    items = Legal.Pouch_Berry_XY;
+                t.Prize = items[Rand() % items.Length];
+            }
+            else if (rGift)
+            {
+                t.Prize = 0;
+            }
         }
 
         private string[] GetTagsORAS()
         {
             string[] tags = Enumerable.Repeat("", trdata.Length).ToArray();
             ImportantTrainers = true;
-            //Rival Battles
+
+            // Rival Battles
             TagTrainer(tags, "RIVAL1", 289, 292, 295, 298, 527, 530, 674, 677, 699, 906); // Rival w/ Grass Starter
             TagTrainer(tags, "RIVAL2", 290, 293, 296, 299, 528, 531, 675, 678, 700, 907); // Rival w/ Fire Starter
             TagTrainer(tags, "RIVAL3", 291, 294, 297, 300, 529, 532, 676, 679, 701, 908); // Rival w/ Water Starter
 
-            //Aqua Admins
-            TagTrainer(tags, "AQUA1", 178, 231, 266);              // Archie
-            TagTrainer(tags, "AQUA2", 683, 684, 685, 686, 687);    // Matt
-            TagTrainer(tags, "AQUA3", 688, 689, 690);              // Shelly
+            // Aqua Admins
+            TagTrainer(tags, "AQUA1", 178, 231, 266);           // Archie
+            TagTrainer(tags, "AQUA2", 683, 684, 685, 686, 687); // Matt
+            TagTrainer(tags, "AQUA3", 688, 689, 690);           // Shelly
 
-            //Magma Admins
-            TagTrainer(tags, "MAGMA1", 235, 236, 271);             // Maxie
-            TagTrainer(tags, "MAGMA2", 694, 695, 696, 697, 698);   // Courney
-            TagTrainer(tags, "MAGMA3", 691, 692, 693);             // Tabitha
+            // Magma Admins
+            TagTrainer(tags, "MAGMA1", 235, 236, 271);           // Maxie
+            TagTrainer(tags, "MAGMA2", 694, 695, 696, 697, 698); // Courtney
+            TagTrainer(tags, "MAGMA3", 691, 692, 693);           // Tabitha
 
-            //Gym Leaders
-            TagTrainer(tags, "GYM1", 561);         // Roxanne
-            TagTrainer(tags, "GYM2", 563);         // Brawly
-            TagTrainer(tags, "GYM3", 567);         // Wattson
-            TagTrainer(tags, "GYM4", 569);         // Flannery
-            TagTrainer(tags, "GYM5", 570);         // Norman
-            TagTrainer(tags, "GYM6", 571);         // Winona
-            TagTrainer(tags, "GYM7", 552);         // Liza & Tate
-            TagTrainer(tags, "GYM8", 572, 943);    // Wallace
+            // Gym Leaders
+            TagTrainer(tags, "GYM1", 561);      // Roxanne
+            TagTrainer(tags, "GYM2", 563);      // Brawly
+            TagTrainer(tags, "GYM3", 567);      // Wattson
+            TagTrainer(tags, "GYM4", 569);      // Flannery
+            TagTrainer(tags, "GYM5", 570);      // Norman
+            TagTrainer(tags, "GYM6", 571);      // Winona
+            TagTrainer(tags, "GYM7", 552);      // Liza & Tate
+            TagTrainer(tags, "GYM8", 572, 943); // Wallace
 
-            //Elite 4
-            TagTrainer(tags, "ELITE1", 553, 909);  // Sidney
-            TagTrainer(tags, "ELITE2", 554, 910);  // Phoebe
-            TagTrainer(tags, "ELITE3", 555, 911);  // Glacia
-            TagTrainer(tags, "ELITE4", 556, 912);  // Drake
+            // Elite Four
+            TagTrainer(tags, "ELITE1", 553, 909);             // Sidney
+            TagTrainer(tags, "ELITE2", 554, 910);             // Phoebe
+            TagTrainer(tags, "ELITE3", 555, 911);             // Glacia
+            TagTrainer(tags, "ELITE4", 556, 912);             // Drake
             TagTrainer(tags, "CHAMPION", 557, 680, 913, 942); // Champion Steven
 
-            //Wally
+            // Wally
             TagTrainer(tags, "WALLY", 518, 583, 944, 945, 946, 947);
 
-            //Zinnia
+            // Zinnia
             TagTrainer(tags, "LOREKEEPER", 713, 898);
+
+            // Aarune
+            TagTrainer(tags, "EXPERT", 856, 857);
 
             ImportantTrainers = false;
             TagTrainer(tags, "RIVAL1", 1, 4); // Rival w/ Grass Starter
             TagTrainer(tags, "RIVAL2", 2, 5); // Rival w/ Fire Starter
             TagTrainer(tags, "RIVAL3", 3, 6); // Rival w/ Water Starter
-            //Gym Trainers (Tagged in order of appearance on Bulbapedia's lists)
+
+            // Gym Trainers (Tagged in order of appearance on Bulbapedia's lists)
             if (rTypeGymTrainers)
             {
                 TagTrainer(tags, "GYM1", 562, 22, 667);
@@ -834,53 +827,67 @@ namespace pk3DS
             }
             return tags;
         }
+
         private string[] GetTagsXY()
         {
             string[] tags = Enumerable.Repeat("", trdata.Length).ToArray();
             ImportantTrainers = true;
-            //Rival Battles
+
+            // Rival Battles
             TagTrainer(tags, "RIVAL1", 130, 184, 329, 332, 335, 338, 341, 435, 519, 604, 575, 578, 581, 584, 587, 590, 593, 596, 599, 607); // Rival w/ Fire Starter
             TagTrainer(tags, "RIVAL2", 131, 185, 330, 333, 336, 339, 342, 436, 520, 605, 576, 579, 582, 585, 588, 591, 594, 597, 600, 608); // Rival w/ Water Starter
             TagTrainer(tags, "RIVAL3", 132, 186, 331, 334, 337, 340, 343, 437, 521, 606, 577, 580, 583, 586, 589, 592, 595, 598, 601, 609); // Rival w/ Grass Starter
 
-            //Important Flare Members
-            TagTrainer(tags, "FLAREBOSS", 303, 525, 526);   // Lysandre
-            TagTrainer(tags, "FLARE1", 175, 344);           // Aliana
-            TagTrainer(tags, "FLARE2", 350, 351);           // Bryony
-            TagTrainer(tags, "FLARE3", 348, 349);           // Celosia
-            TagTrainer(tags, "FLARE4", 346, 347);           // Mable
-            TagTrainer(tags, "FLARE5", 345);                // Xerosic
+            // Team Flare Admins
+            TagTrainer(tags, "FLAREBOSS", 303, 525, 526); // Lysandre
+            TagTrainer(tags, "FLARE1", 175, 344);         // Aliana
+            TagTrainer(tags, "FLARE2", 350, 351);         // Bryony
+            TagTrainer(tags, "FLARE3", 348, 349);         // Celosia
+            TagTrainer(tags, "FLARE4", 346, 347);         // Mable
+            TagTrainer(tags, "FLARE5", 345);              // Xerosic
 
-            //Gym Leaders
-            TagTrainer(tags, "GYM1", 6, 254, 262);              // Viola
-            TagTrainer(tags, "GYM2", 76, 261, 279);             // Grant
-            TagTrainer(tags, "GYM3", 21, 188, 255, 263, 613);   // Korrina
-            TagTrainer(tags, "GYM4", 22, 256, 264);             // Ramos
-            TagTrainer(tags, "GYM5", 23, 257, 265);             // Clemont
-            TagTrainer(tags, "GYM6", 24, 258, 266);             // Valerie
-            TagTrainer(tags, "GYM7", 25, 259, 267);             // Olympia
-            TagTrainer(tags, "GYM8", 26, 260, 268);             // Wulfric
+            // Gym Leaders
+            TagTrainer(tags, "GYM1", 6, 254, 262);       // Viola
+            TagTrainer(tags, "GYM2", 76, 261, 279);      // Grant
+            TagTrainer(tags, "GYM3", 21, 255, 263, 613); // Korrina
+            TagTrainer(tags, "GYM4", 22, 256, 264);      // Ramos
+            TagTrainer(tags, "GYM5", 23, 257, 265);      // Clemont
+            TagTrainer(tags, "GYM6", 24, 258, 266);      // Valerie
+            TagTrainer(tags, "GYM7", 25, 259, 267);      // Olympia
+            TagTrainer(tags, "GYM8", 26, 260, 268);      // Wulfric
 
-            //Elite 4
-            TagTrainer(tags, "ELITE1", 269, 273, 507);  // Malva
-            TagTrainer(tags, "ELITE2", 271, 275);       // Siebold
-            TagTrainer(tags, "ELITE3", 187, 272);       // Wikstrom
-            TagTrainer(tags, "ELITE4", 270, 274);       // Drasna
-            TagTrainer(tags, "CHAMPION", 276, 277);     // Champion Diantha
+            // Elite Four
+            TagTrainer(tags, "ELITE1", 269, 273, 507); // Malva
+            TagTrainer(tags, "ELITE2", 271, 275);      // Siebold
+            TagTrainer(tags, "ELITE3", 187, 272);      // Wikstrom
+            TagTrainer(tags, "ELITE4", 270, 274);      // Drasna
+            TagTrainer(tags, "CHAMPION", 276, 277);    // Champion Diantha
 
-            //"Friends"
-            TagTrainer(tags, "SHAUNA", 137, 138, 139, 321, 322, 323);
+            // Friends
+            TagTrainer(tags, "SHAUNA", 321, 322, 323);
             TagTrainer(tags, "TREVOR", 325, 439);
             TagTrainer(tags, "TIERNO", 324, 438, 573);
 
-            //Prof
+            // Professor
             TagTrainer(tags, "PROFESSOR", 327, 328);
 
-            //Suspicious Trainer ???
+            // Suspicious Trainer ???
             TagTrainer(tags, "ESSENTIA", 503, 504, 505, 511, 512, 513, 514, 515); // Emma
 
+            // AZ
+            TagTrainer(tags, "AZ", 602);
+
+            // Battle Chatelaines
+            TagTrainer(tags, "CHATELAINE1", 559); // Nita
+            TagTrainer(tags, "CHATELAINE2", 560); // Evelyn
+            TagTrainer(tags, "CHATELAINE3", 561); // Dana
+            TagTrainer(tags, "CHATELAINE4", 562); // Morgan
+
             ImportantTrainers = false;
-            //Gym Trainers (Tagged in order of appearance on Bulbapedia's lists)
+            TagTrainer(tags, "SHAUNA", 137, 138, 139);
+            TagTrainer(tags, "GYM3", 188);
+
+            // Gym Trainers (Tagged in order of appearance on Bulbapedia's lists)
             if (rTypeGymTrainers)
             {
                 TagTrainer(tags, "GYM1", 39, 40, 48);
@@ -894,7 +901,9 @@ namespace pk3DS
             }
             return tags;
         }
+
         private bool ImportantTrainers;
+        public static SpeciesRandomizer rSpeciesRand;
 
         // Theme Methods
         private void TagTrainer(string[] trTags, string tag, params int[] ids)
@@ -909,112 +918,25 @@ namespace pk3DS
             foreach (int id in ids)
                 rImportant[id] = tag;
         }
-        private int[] GetMegaStones(int species) // This is horrible.
+
+        private static Dictionary<int, int[]> MegaDictionary;
+
+        private static int[] GetRandomMega(out int species)
         {
-            switch (species)
-            {
-                case 3:
-                    return new [] { 659 };
-                case 6:
-                    return new [] { 660, 678 };
-                case 9:
-                    return new [] { 661 };
-                case 15:
-                    return new [] { 770 };
-                case 18:
-                    return new [] { 762 };
-                case 65:
-                    return new [] { 679 };
-                case 80:
-                    return new [] { 760 };
-                case 94:
-                    return new [] { 656 };
-                case 115:
-                    return new [] { 675 };
-                case 127:
-                    return new [] { 671 };
-                case 130:
-                    return new [] { 676 };
-                case 142:
-                    return new [] { 672 };
-                case 150:
-                    return new [] { 662, 663 };
-                case 181:
-                    return new [] { 658 };
-                case 208:
-                    return new [] { 761 };
-                case 212:
-                    return new [] { 670 };
-                case 214:
-                    return new [] { 680 };
-                case 229:
-                    return new [] { 666 };
-                case 248:
-                    return new [] { 669 };
-                case 254:
-                    return new [] { 753 };
-                case 257:
-                    return new [] { 664 };
-                case 260:
-                    return new [] { 752 };
-                case 282:
-                    return new [] { 657 };
-                case 302:
-                    return new [] { 754 };
-                case 303:
-                    return new [] { 681 };
-                case 306:
-                    return new [] { 667 };
-                case 308:
-                    return new [] { 665 };
-                case 310:
-                    return new [] { 682 };
-                case 319:
-                    return new [] { 759 };
-                case 323:
-                    return new [] { 767 };
-                case 334:
-                    return new [] { 755 };
-                case 354:
-                    return new [] { 668 };
-                case 359:
-                    return new [] { 677 };
-                case 362:
-                    return new [] { 763 };
-                case 373:
-                    return new [] { 769 };
-                case 376:
-                    return new [] { 758 };
-                case 380:
-                    return new [] { 684 };
-                case 381:
-                    return new [] { 685 };
-                case 428:
-                    return new [] { 768 };
-                case 445:
-                    return new [] { 683 };
-                case 448:
-                    return new [] { 673 };
-                case 460:
-                    return new [] { 674 };
-                case 475:
-                    return new [] { 756 };
-                case 531:
-                    return new [] { 757 };
-                case 719:
-                    return new [] { 764 };
-                default:
-                    return new int[] { };
-            }
+            int rnd = Util.rand.Next(0, MegaDictionary.Count - 1);
+            species = MegaDictionary.Keys.ElementAt(rnd);
+            return MegaDictionary.Values.ElementAt(rnd);
         }
+
         private int GetRandomType(int trainer)
         {
-            if (rTags[trainer] != "") 
+            if (rTags[trainer] != "")
                 return TagTypes[rTags[trainer]];
-            if (!rEnsureMEvo.Contains(trainer)) 
-                return (int)(rnd32()%types.Length);
-            return mEvoTypes[rnd32() % mEvoTypes.Length];
+            if (!rEnsureMEvo.Contains(trainer))
+                return (int)(Rand()%types.Length);
+            return mEvoTypes[Rand() % mEvoTypes.Length];
         }
+
         private int[] GetMegaEvolvableTypes()
         {
             List<int> MEvoTypes = new List<int>();
@@ -1029,18 +951,13 @@ namespace pk3DS
             Console.WriteLine("There are " + MEvoTypes.Count + " Types capable of Mega Evolution.");
             return MEvoTypes.ToArray();
         }
-        private int GetRandomMegaEvolvablePokemon(int type)
+
+        private void IsFormClosing(object sender, FormClosingEventArgs e)
         {
-            List<int> valids = megaEvos.Where(spec => (int)Main.SpeciesStat[spec].Types[0] == type || (int)Main.SpeciesStat[spec].Types[1] == type).ToList();
-            return valids[(int)(rnd32() % valids.Count)];
+            WriteFile();
         }
 
-        private void formClosing(object sender, FormClosingEventArgs e)
-        {
-            writeFile();
-        }
-
-        private void gotoParty(object sender, EventArgs e)
+        private void GotoParty(object sender, EventArgs e)
         {
             // When sprite is clicked, jump to that Pokémon.
             tabControl1.SelectedIndex = 1 + Array.IndexOf(new[]{PB_Team1, PB_Team2, PB_Team3, PB_Team4, PB_Team5, PB_Team6,}, sender as PictureBox);

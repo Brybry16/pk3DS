@@ -42,6 +42,7 @@
             this.GB_RerollHelper = new System.Windows.Forms.GroupBox();
             this.GB_Rerolls = new System.Windows.Forms.GroupBox();
             this.label1 = new System.Windows.Forms.Label();
+            this.CHK_EverythingShiny = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Rerolls)).BeginInit();
             ((System.ComponentModel.ISupportInitialize)(this.NUD_Rate)).BeginInit();
             this.GB_RerollHelper.SuspendLayout();
@@ -195,11 +196,22 @@
             this.label1.Text = "Note:\r\nThe above reroll count will overwrite the existing code.\r\n\r\nTo revert chan" +
     "ges, use the button below.";
             // 
+            // CHK_EverythingShiny
+            // 
+            this.CHK_EverythingShiny.AutoSize = true;
+            this.CHK_EverythingShiny.Location = new System.Drawing.Point(281, 184);
+            this.CHK_EverythingShiny.Name = "CHK_EverythingShiny";
+            this.CHK_EverythingShiny.Size = new System.Drawing.Size(96, 30);
+            this.CHK_EverythingShiny.TabIndex = 14;
+            this.CHK_EverythingShiny.Text = "EVERYTHING\r\nSHINY";
+            this.CHK_EverythingShiny.UseVisualStyleBackColor = true;
+            // 
             // ShinyRate
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(384, 271);
+            this.Controls.Add(this.CHK_EverythingShiny);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.GB_Rerolls);
             this.Controls.Add(this.GB_RerollHelper);
@@ -241,5 +253,6 @@
         private System.Windows.Forms.GroupBox GB_RerollHelper;
         private System.Windows.Forms.GroupBox GB_Rerolls;
         private System.Windows.Forms.Label label1;
+        private System.Windows.Forms.CheckBox CHK_EverythingShiny;
     }
 }

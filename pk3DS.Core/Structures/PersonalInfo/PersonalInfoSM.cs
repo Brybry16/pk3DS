@@ -6,6 +6,7 @@ namespace pk3DS.Core.Structures.PersonalInfo
     public class PersonalInfoSM : PersonalInfoXY
     {
         public new const int SIZE = 0x54;
+
         public PersonalInfoSM(byte[] data)
         {
             if (data.Length != SIZE)
@@ -14,11 +15,17 @@ namespace pk3DS.Core.Structures.PersonalInfo
 
             TMHM = getBits(Data.Skip(0x28).Take(0x10).ToArray()); // 36-39
             TypeTutors = getBits(Data.Skip(0x38).Take(0x4).ToArray()); // 40
+            SpecialTutors = new[]
+            {
+                getBits(Data.Skip(0x3C).Take(0x0A).ToArray()),
+            };
         }
+
         public override byte[] Write()
         {
             setBits(TMHM).CopyTo(Data, 0x28);
             setBits(TypeTutors).CopyTo(Data, 0x38);
+            setBits(SpecialTutors[0]).CopyTo(Data, 0x3C);
             return Data;
         }
         

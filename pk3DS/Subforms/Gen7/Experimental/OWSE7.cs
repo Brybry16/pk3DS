@@ -1,9 +1,10 @@
 ﻿using System;
 using System.Linq;
 using System.Windows.Forms;
+
 using pk3DS.Core;
 using pk3DS.Core.CTR;
-using pk3DS.Core.Structures.Gen7;
+using pk3DS.Core.Structures;
 
 namespace pk3DS
 {
@@ -12,6 +13,7 @@ namespace pk3DS
         private readonly lzGARCFile EncounterData;
         private readonly lzGARCFile WorldData;
         private readonly lzGARCFile ZoneData;
+
         public OWSE7(lzGARCFile ed, lzGARCFile zd, lzGARCFile wd)
         {
             EncounterData = ed;
@@ -19,7 +21,7 @@ namespace pk3DS
             WorldData = wd;
 
             locationList = Main.Config.getText(TextName.metlist_000000);
-            locationList = SMWE.getGoodLocationList(locationList);
+            locationList = SMWE.GetGoodLocationList(locationList);
 
             InitializeComponent();
 
@@ -30,19 +32,13 @@ namespace pk3DS
         }
 
         private readonly byte[] zoneData;
-        private byte[] worldData;
+        private readonly byte[] worldData;
         private readonly string[] locationList;
-        
+
         private void loadData()
         {
             // get zonedata array
-            ZoneData7[] zd = new ZoneData7[zoneData.Length / ZoneData7.SIZE];
-            for (int i = 0; i < zd.Length; i++)
-            {
-                byte[] buff = new byte[ZoneData7.SIZE];
-                Buffer.BlockCopy(zoneData, i*ZoneData7.SIZE, buff, 0, ZoneData7.SIZE);
-                zd[i] = new ZoneData7(buff);
-            }
+            var zd = ZoneData7.GetArray(zoneData);
 
             string[] locations = zd.Select((z, i) => $"{i:000} - {locationList[z.ParentMap]}").ToArray();
             CB_LocationID.Items.AddRange(locations);
@@ -53,10 +49,11 @@ namespace pk3DS
         {
             setEntry();
             entry = CB_LocationID.SelectedIndex;
-            getEntry();
+            GetEntry();
         }
 
         private int entry = -1;
+
         private void setEntry()
         {
             if (entry < 0)
@@ -67,7 +64,8 @@ namespace pk3DS
 
         private bool loading = false;
         private World Map;
-        private void getEntry()
+
+        private void GetEntry()
         {
             Console.WriteLine($"Loading {CB_LocationID.Text}");
             int index = entry*11;
@@ -107,19 +105,19 @@ namespace pk3DS
 
         private class World
         {
-            private byte[][] _7;
-            private byte[][] _8;
+            private readonly byte[][] _7;
+            private readonly byte[][] _8;
 
             private bool HasZS => _7 != null;
             private bool HasZI => _8 != null;
-            public Script[] ZoneScripts; 
+            public Script[] ZoneScripts;
             public Script[] ZoneInfoScripts;
 
             public World(lzGARCFile garc, int worldID)
             {
                 int index = worldID*11;
-                _7 = mini.unpackMini(garc[index + 7], "ZS");
-                _8 = mini.unpackMini(garc[index + 8], "ZI");
+                _7 = Mini.UnpackMini(garc[index + 7], "ZS");
+                _8 = Mini.UnpackMini(garc[index + 8], "ZI");
 
                 ZoneScripts = HasZS ? _7.Select(arr => new Script(arr)).ToArray() : new Script[0];
                 ZoneInfoScripts = HasZI ? _8.Select(arr => new Script(arr)).ToArray() : new Script[0];
@@ -149,6 +147,7 @@ namespace pk3DS
             };
             L_7_Info.Text = string.Join(Environment.NewLine, lines);
         }
+
         private void NUD_8_Count_ValueChanged(object sender, EventArgs e)
         {
             if (loading)
